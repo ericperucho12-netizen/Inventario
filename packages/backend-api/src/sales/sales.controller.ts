@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Query } from '@nestjs/common';
 import { SalesService } from './sales.service.js';
 import { CreateSaleDto } from './dto/create-sale.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -16,8 +16,8 @@ export class SalesController {
   }
 
   @Get()
-  findAll() {
-    return this.salesService.findAll();
+  findAll(@Query('days') days?: number) {
+    return this.salesService.findAll(days);
   }
 
   @Get(':id')

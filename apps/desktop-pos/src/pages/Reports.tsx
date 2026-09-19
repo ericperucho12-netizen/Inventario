@@ -1,193 +1,265 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { api } from '../lib/axios';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { TrendingUp, Receipt, Calendar, DollarSign, XCircle } from 'lucide-react';
+import { 
+  BarChart3, Calendar, Download, Loader2, DollarSign, Package, TrendingUp
+} from 'lucide-react';
+import * as XLSX from 'xlsx';
 
-interface Sale {
-  id: string;
-  total: string | number;
-  status: 'COMPLETED' | 'REFUNDED';
-  createdAt: string;
-  details: {
-    id: string;
+interface ReportData {
+  summary: {
+    totalRevenue: number;
+    totalCost: number;
+    netProfit: number;
+    salesCount: number;
+  };
+  topProducts: {
+    name: string;
     quantity: number;
-    subtotal: string | number;
-    unitCost: string | number;
-    product: {
-      description: string;
-    };
+    revenue: number;
+    cost: number;
   }[];
+  rawTickets: any[];
 }
 
 export default function Reports() {
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<ReportData | null>(null);
 
-  const fetchSales = () => {
-    api.get('/sales')
-      .then(res => setSales(res.data))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  };
+  const setQuickDate = (type: 'today' | 'yesterday' | 'week' | 'month') => {
+    const today = new Date();
+    const formatDate = (date: Date) => date.toISOString().split('T')[0];
 
-  useEffect(() => {
-    fetchSales();
-  }, []);
-
-  const handleRefund = async (id: string) => {
-    if (confirm('¿Estás seguro de cancelar este ticket? Los productos regresarán al inventario.')) {
-      try {
-        await api.post(`/sales/${id}/refund`);
-        alert('Ticket cancelado correctamente.');
-        fetchSales();
-      } catch (error: any) {
-        alert(error.response?.data?.message || 'Error cancelando el ticket');
-      }
+    if (type === 'today') {
+      setStartDate(formatDate(today));
+      setEndDate(formatDate(today));
+    } else if (type === 'yesterday') {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      setStartDate(formatDate(yesterday));
+      setEndDate(formatDate(yesterday));
+    } else if (type === 'week') {
+      const firstDay = new Date(today);
+      const day = firstDay.getDay() || 7; // Get current day number, converting Sun(0) to 7
+      if (day !== 1) firstDay.setHours(-24 * (day - 1)); // adjust when day is not monday
+      setStartDate(formatDate(firstDay));
+      setEndDate(formatDate(today));
+    } else if (type === 'month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      setStartDate(formatDate(firstDay));
+      setEndDate(formatDate(today));
     }
   };
 
-  // Solo contabilizar ventas completadas para métricas
-  const validSales = sales.filter(s => s.status === 'COMPLETED');
-  
-  const totalRevenue = validSales.reduce((acc, sale) => acc + Number(sale.total), 0);
-  const totalSales = validSales.length;
-  
-  // Calcular Costo Total de lo vendido
-  const totalCost = validSales.reduce((acc, sale) => {
-    const saleCost = sale.details.reduce((sum, d) => sum + (Number(d.unitCost) * d.quantity), 0);
-    return acc + saleCost;
-  }, 0);
+  const handleSearch = async () => {
+    if (!startDate || !endDate) {
+      alert('Por favor selecciona ambas fechas');
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await api.get('/reports', {
+        params: { startDate, endDate }
+      });
+      setData(res.data);
+    } catch (error) {
+      console.error('Error fetching report:', error);
+      alert('Error al generar el reporte');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const grossProfit = totalRevenue - totalCost;
+  const exportToExcel = () => {
+    if (!data) return;
+
+    // Pestaña 1: Resumen General
+    const summaryData = [
+      { Métrica: 'Ventas Totales', Valor: `$${data.summary.totalRevenue.toFixed(2)}` },
+      { Métrica: 'Costo Total de Ventas', Valor: `$${data.summary.totalCost.toFixed(2)}` },
+      { Métrica: 'Utilidad Neta (Ganancia Libre)', Valor: `$${data.summary.netProfit.toFixed(2)}` },
+      { Métrica: 'Cantidad de Tickets Cobrados', Valor: data.summary.salesCount.toString() },
+    ];
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+
+    // Pestaña 2: Productos Más Vendidos
+    const topProductsData = data.topProducts.map((p, i) => ({
+      Ranking: i + 1,
+      Producto: p.name,
+      'Cantidad Vendida': p.quantity,
+      'Ingreso Generado': `$${p.revenue.toFixed(2)}`,
+      'Costo Generado': `$${p.cost.toFixed(2)}`,
+      'Utilidad Generada': `$${(p.revenue - p.cost).toFixed(2)}`
+    }));
+    const wsTopProducts = XLSX.utils.json_to_sheet(topProductsData);
+
+    // Pestaña 3: Detalle de Tickets
+    const ticketsData = data.rawTickets.map(t => ({
+      Folio: t.id.substring(0, 8),
+      Fecha: new Date(t.date).toLocaleString(),
+      Cliente: t.customer,
+      Tipo: t.isCredit ? 'FIADO' : 'PAGADO',
+      'Ingreso (Cobrado)': `$${t.total.toFixed(2)}`,
+      'Costo (Inventario)': `$${t.cost.toFixed(2)}`,
+      'Utilidad (Ganancia)': `$${t.profit.toFixed(2)}`
+    }));
+    const wsTickets = XLSX.utils.json_to_sheet(ticketsData);
+
+    // Crear Libro de Excel
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumen General');
+    XLSX.utils.book_append_sheet(wb, wsTopProducts, 'Top Productos');
+    XLSX.utils.book_append_sheet(wb, wsTickets, 'Desglose de Tickets');
+
+    // Descargar
+    XLSX.writeFile(wb, `Reporte_PeruchOS_${startDate}_al_${endDate}.xlsx`);
+  };
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 p-6 overflow-hidden">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white mb-1">Reportes de Ventas</h1>
-        <p className="text-slate-400">Resumen histórico de ingresos y tickets generados.</p>
+    <div className="p-8 h-full flex flex-col overflow-auto custom-scrollbar">
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <BarChart3 className="h-8 w-8 text-indigo-500" />
+            Reportes Financieros
+          </h1>
+          <p className="text-slate-400 mt-1">Calcula tus utilidades reales y exporta a Excel.</p>
+        </div>
+      </header>
+
+      {/* Selectores de Fecha */}
+      <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-6 backdrop-blur-sm mb-8">
+        
+        {/* Filtros Rápidos */}
+        <div className="flex flex-wrap gap-3 mb-6 pb-6 border-b border-white/5">
+          <span className="text-sm font-medium text-slate-400 py-1.5">Filtros Rápidos:</span>
+          <button onClick={() => setQuickDate('today')} className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors">Hoy</button>
+          <button onClick={() => setQuickDate('yesterday')} className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors">Ayer</button>
+          <button onClick={() => setQuickDate('week')} className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors">Esta Semana</button>
+          <button onClick={() => setQuickDate('month')} className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm transition-colors">Este Mes</button>
+        </div>
+
+        <div className="flex flex-wrap items-end gap-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <Calendar className="h-4 w-4" /> Desde:
+            </label>
+            <input 
+              type="date" 
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-400 flex items-center gap-2">
+              <Calendar className="h-4 w-4" /> Hasta:
+            </label>
+            <input 
+              type="date" 
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-slate-950 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <button 
+            onClick={handleSearch}
+            disabled={loading}
+            className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all disabled:opacity-50"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <BarChart3 className="h-5 w-5" />}
+            Generar Reporte
+          </button>
+        </div>
       </div>
 
-      {/* Tarjetas de Indicadores */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-lg flex items-center gap-4">
-          <div className="p-4 bg-emerald-500/10 text-emerald-400 rounded-xl">
-            <TrendingUp className="h-8 w-8" />
+      {data && (
+        <div className="animate-fade-in space-y-8">
+          
+          <div className="flex justify-end">
+            <button 
+              onClick={exportToExcel}
+              className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-105"
+            >
+              <Download className="h-5 w-5" />
+              Descargar Reporte en Excel (.xlsx)
+            </button>
           </div>
-          <div>
-            <p className="text-slate-400 text-sm font-medium">Ingresos Totales</p>
-            <h2 className="text-2xl font-bold text-white">${totalRevenue.toFixed(2)}</h2>
-          </div>
-        </div>
 
-        <div className="bg-slate-900 border border-emerald-500/30 rounded-2xl p-6 shadow-lg shadow-emerald-500/10 flex items-center gap-4 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-5">
-            <DollarSign className="h-24 w-24" />
-          </div>
-          <div className="p-4 bg-emerald-500 text-white rounded-xl z-10">
-            <DollarSign className="h-8 w-8" />
-          </div>
-          <div className="z-10">
-            <p className="text-emerald-400 text-sm font-medium">Utilidad Bruta</p>
-            <h2 className="text-2xl font-bold text-white">${grossProfit.toFixed(2)}</h2>
-          </div>
-        </div>
-        
-        <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-lg flex items-center gap-4">
-          <div className="p-4 bg-blue-500/10 text-blue-400 rounded-xl">
-            <Receipt className="h-8 w-8" />
-          </div>
-          <div>
-            <p className="text-slate-400 text-sm font-medium">Tickets Válidos</p>
-            <h2 className="text-2xl font-bold text-white">{totalSales}</h2>
-          </div>
-        </div>
+          {/* Tarjetas de Resumen */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all"></div>
+              <div className="flex items-center gap-3 mb-2 text-slate-400">
+                <DollarSign className="h-5 w-5 text-blue-400" />
+                <span>Ingresos Totales (Cobrado)</span>
+              </div>
+              <p className="text-3xl font-bold text-white">${data.summary.totalRevenue.toFixed(2)}</p>
+            </div>
 
-        <div className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-lg flex items-center gap-4">
-          <div className="p-4 bg-purple-500/10 text-purple-400 rounded-xl">
-            <Calendar className="h-8 w-8" />
+            <div className="bg-slate-900 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+              <div className="flex items-center gap-3 mb-2 text-slate-400">
+                <Package className="h-5 w-5 text-amber-400" />
+                <span>Costo de Mercancía Vendida</span>
+              </div>
+              <p className="text-3xl font-bold text-white">${data.summary.totalCost.toFixed(2)}</p>
+            </div>
+
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/40 transition-all"></div>
+              <div className="flex items-center gap-3 mb-2 text-emerald-400 font-bold">
+                <TrendingUp className="h-5 w-5" />
+                <span>Utilidad Neta (Ganancia Libre)</span>
+              </div>
+              <p className="text-4xl font-bold text-emerald-400">${data.summary.netProfit.toFixed(2)}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-slate-400 text-sm font-medium">Ticket Promedio</p>
-            <h2 className="text-2xl font-bold text-white">
-              ${totalSales > 0 ? (totalRevenue / totalSales).toFixed(2) : '0.00'}
+
+          {/* Top 10 Productos */}
+          <div className="bg-slate-900/50 border border-white/10 rounded-2xl p-6">
+            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <Package className="h-5 w-5 text-indigo-400" />
+              Top 10 Productos Más Vendidos
             </h2>
-          </div>
-        </div>
-      </div>
-
-      {/* Historial de Tickets */}
-      <div className="flex-1 bg-slate-900 border border-white/10 rounded-2xl shadow-lg flex flex-col overflow-hidden">
-        <div className="p-6 border-b border-white/10">
-          <h2 className="text-lg font-bold text-white">Historial de Transacciones</h2>
-        </div>
-        
-        <div className="flex-1 overflow-auto custom-scrollbar p-6">
-          {isLoading ? (
-            <div className="text-center text-slate-500 py-10">Cargando reportes...</div>
-          ) : sales.length === 0 ? (
-            <div className="text-center text-slate-500 py-10">No hay ventas registradas todavía.</div>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/10 text-slate-400 text-sm">
-                  <th className="pb-3 font-medium">Estado</th>
-                  <th className="pb-3 font-medium">Folio / ID Ticket</th>
-                  <th className="pb-3 font-medium">Fecha y Hora</th>
-                  <th className="pb-3 font-medium">Artículos</th>
-                  <th className="pb-3 font-medium text-right">Monto Total</th>
-                  <th className="pb-3 font-medium text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.map((sale) => (
-                  <tr key={sale.id} className={`border-b border-white/5 transition-colors group ${sale.status === 'REFUNDED' ? 'opacity-50' : 'hover:bg-white/5'}`}>
-                    <td className="py-4">
-                      {sale.status === 'COMPLETED' ? (
-                        <span className="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full font-bold">OK</span>
-                      ) : (
-                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-bold">DEVUELTO</span>
-                      )}
-                    </td>
-                    <td className="py-4">
-                      <span className={`font-mono text-xs px-2 py-1 rounded ${sale.status === 'REFUNDED' ? 'text-slate-500' : 'text-slate-300 bg-slate-800'}`}>
-                        {sale.id.split('-')[0]}
-                      </span>
-                    </td>
-                    <td className="py-4 text-slate-300 text-sm">
-                      {format(new Date(sale.createdAt), "dd 'de' MMMM, yyyy - HH:mm", { locale: es })}
-                    </td>
-                    <td className="py-4">
-                      <div className="flex flex-col gap-1">
-                        {sale.details.map((d) => (
-                          <span key={d.id} className="text-xs text-slate-400">
-                            {d.quantity}x {d.product?.description || 'Producto Eliminado'}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="py-4 text-right">
-                      <span className={`font-bold ${sale.status === 'REFUNDED' ? 'text-slate-500 line-through' : 'text-emerald-400'}`}>
-                        ${Number(sale.total).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="py-4 text-right">
-                      {sale.status === 'COMPLETED' && (
-                        <button
-                          onClick={() => handleRefund(sale.id)}
-                          className="text-red-400 hover:text-white hover:bg-red-500 px-3 py-1 rounded transition-colors text-sm font-medium flex items-center gap-1 ml-auto"
-                        >
-                          <XCircle className="h-4 w-4" /> Cancelar
-                        </button>
-                      )}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-950 text-slate-300">
+                  <tr>
+                    <th className="px-4 py-3 rounded-l-lg">#</th>
+                    <th className="px-4 py-3">Producto</th>
+                    <th className="px-4 py-3 text-center">Cantidad Vendida</th>
+                    <th className="px-4 py-3 text-right">Ingreso Bruto</th>
+                    <th className="px-4 py-3 text-right text-emerald-400 rounded-r-lg">Utilidad Generada</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {data.topProducts.map((p, i) => (
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 font-bold text-slate-500">{i + 1}</td>
+                      <td className="px-4 py-3 font-medium text-white">{p.name}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="bg-slate-800 text-slate-300 px-2 py-1 rounded-full text-xs font-bold">{p.quantity}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right text-slate-300">${p.revenue.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-bold text-emerald-400">${(p.revenue - p.cost).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {data.topProducts.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
+                        No hay ventas en este periodo.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
         </div>
-      </div>
+      )}
     </div>
   );
 }

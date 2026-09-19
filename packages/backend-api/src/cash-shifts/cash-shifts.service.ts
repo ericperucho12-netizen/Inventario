@@ -33,7 +33,11 @@ export class CashShiftsService {
       where: { cashShiftId: current.id }
     });
 
-    const totalSales = sales.reduce((acc, sale) => acc + Number(sale.total), 0);
+    const totalSales = sales.reduce((acc, sale) => {
+      if (sale.status === 'REFUNDED') return acc;
+      if (sale.isCredit) return acc;
+      return acc + Number(sale.total);
+    }, 0);
     const systemAmount = Number(current.initialAmount) + totalSales;
 
     current.declaredAmount = closeCashShiftDto.declaredAmount;
@@ -60,7 +64,11 @@ export class CashShiftsService {
       where: { cashShiftId: current.id }
     });
 
-    const salesTotal = sales.reduce((acc, sale) => acc + Number(sale.total), 0);
+    const salesTotal = sales.reduce((acc, sale) => {
+      if (sale.status === 'REFUNDED') return acc;
+      if (sale.isCredit) return acc;
+      return acc + Number(sale.total);
+    }, 0);
     
     return {
       status: 'OPEN',

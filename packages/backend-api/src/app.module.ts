@@ -12,6 +12,8 @@ import { CashShiftsModule } from './cash-shifts/cash-shifts.module.js';
 import { SuppliersModule } from './suppliers/suppliers.module.js';
 import { PurchasesModule } from './purchases/purchases.module.js';
 import { CustomersModule } from './customers/customers.module.js';
+import { DashboardModule } from './dashboard/dashboard.module.js';
+import { ReportsModule } from './reports/reports.module.js';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { CustomersModule } from './customers/customers.module.js';
     SuppliersModule,
     PurchasesModule,
     CustomersModule,
+    DashboardModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -18,15 +18,23 @@ interface CartItem {
   quantity: number;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+}
+
 export default function Pos() {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showTicket, setShowTicket] = useState(false);
-  const [ticketData, setTicketData] = useState<{ items: CartItem[], total: number, date: Date, id: string } | null>(null);
+  const [ticketData, setTicketData] = useState<{ items: CartItem[], total: number, date: Date, id: string, isCredit?: boolean, customerName?: string } | null>(null);
   
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [shiftStatus, setShiftStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const ticketRef = useRef<HTMLDivElement>(null);
   
@@ -37,6 +45,10 @@ export default function Pos() {
 
   const fetchProducts = () => {
     api.get('/products').then(res => setProducts(res.data)).catch(console.error);
+  };
+
+  const fetchCustomers = () => {
+    api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
   };
 
   const fetchShiftStatus = async () => {
@@ -50,6 +62,7 @@ export default function Pos() {
 
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
     fetchShiftStatus();
   }, []);
 
@@ -143,17 +156,39 @@ export default function Pos() {
         unitPrice: item.product.sellingPrice
       }));
 
-      const response = await api.post('/sales', { items });
+      const payload: any = { items };
+      if (selectedCustomerId) {
+        payload.customerId = selectedCustomerId;
+        payload.isCredit = true; // Auto-assign as credit if a customer is selected
+      }
+
+      const response = await api.post('/sales', payload);
+      
+      if (selectedCustomerId) {
+        // Venta a crédito: No generar ticket
+        setCart([]);
+        setSelectedCustomerId('');
+        fetchProducts();
+        setIsProcessing(false);
+        setToastMessage('Deuda asignada al cliente exitosamente.');
+        setTimeout(() => setToastMessage(null), 3000);
+        return;
+      }
+      
+      const customer = customers.find(c => c.id === selectedCustomerId);
       
       setTicketData({
         items: [...cart],
         total: subtotal,
         date: new Date(),
-        id: response.data.id
+        id: response.data.id,
+        isCredit: !!selectedCustomerId,
+        customerName: customer?.name
       });
       
       setShowTicket(true);
       setCart([]);
+      setSelectedCustomerId('');
       fetchProducts();
     } catch (error: any) {
       console.error('Error procesando venta:', error);
@@ -257,14 +292,14 @@ export default function Pos() {
                 onClick={() => addToCart(product)}
                 className="group flex flex-col items-start p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all text-left active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <div className="w-full flex justify-between items-start mb-2 gap-2">
-                  <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded truncate max-w-[65%]" title={product.barcode}>{product.barcode}</span>
+                <div className="w-full flex justify-between items-start mb-2 gap-2 overflow-hidden">
+                  <span className="text-xs font-mono text-slate-400 bg-slate-900 px-2 py-1 rounded truncate min-w-0 flex-1" title={product.barcode}>{product.barcode}</span>
                   <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded whitespace-nowrap ${product.stock > 0 ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`}>
                     Stock: {product.stock}
                   </span>
                 </div>
-                <h3 className="font-semibold text-white mb-2 line-clamp-2">{product.description}</h3>
-                <div className="mt-auto w-full flex justify-between items-end gap-2">
+                <h3 className="font-semibold text-white mb-2 line-clamp-2 w-full break-words">{product.description}</h3>
+                <div className="mt-auto w-full flex justify-between items-end gap-2 overflow-hidden">
                   <p className="text-xl font-bold text-emerald-400 shrink-0">${product.sellingPrice}</p>
                   <span className="text-xs text-slate-500 text-right line-clamp-2 leading-tight" title={product.category?.name}>{product.category?.name}</span>
                 </div>
@@ -300,8 +335,8 @@ export default function Pos() {
           ) : (
             cart.map(item => (
               <div key={item.product.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-medium text-sm leading-tight pr-4">{item.product.description}</h4>
+                <div className="flex justify-between items-start mb-3 gap-2 overflow-hidden">
+                  <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">{item.product.description}</h4>
                   <p className="font-bold text-emerald-400 shrink-0">${(item.product.sellingPrice * item.quantity).toFixed(2)}</p>
                 </div>
                 <div className="flex items-center justify-between">
@@ -325,17 +360,44 @@ export default function Pos() {
         </div>
 
         <div className="p-6 border-t border-white/10 bg-slate-900 mt-auto">
+          {/* Cliente y Crédito */}
+          <div className="mb-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-slate-300 font-medium">Asignar a cliente (Fiado)</label>
+            </div>
+            <select
+              value={selectedCustomerId}
+              onChange={(e) => {
+                setSelectedCustomerId(e.target.value);
+                e.target.blur();
+              }}
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">-- Cobro en Efectivo (Sin Cliente) --</option>
+              {customers.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex justify-between items-center mb-6">
-            <span className="text-slate-400 font-medium">Subtotal</span>
+            <span className="text-slate-400 font-medium">Total a Cobrar</span>
             <span className="text-3xl font-bold text-white">${subtotal.toFixed(2)}</span>
           </div>
           <button 
-            onClick={processSale}
+            onClick={(e) => {
+              e.currentTarget.blur();
+              processSale();
+            }}
             disabled={cart.length === 0 || isProcessing}
-            className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] active:scale-[0.98]"
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${
+              selectedCustomerId 
+                ? 'bg-amber-500 hover:bg-amber-400 text-white hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]' 
+                : 'bg-emerald-500 hover:bg-emerald-400 text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+            }`}
           >
             {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-            {isProcessing ? 'Procesando...' : 'Cobrar Venta'}
+            {isProcessing ? 'Procesando...' : (selectedCustomerId ? 'Asignar Deuda (Fiado)' : 'Cobrar Venta')}
           </button>
         </div>
       </div>
@@ -356,6 +418,12 @@ export default function Pos() {
                 <div className="text-center mb-4">
                   <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
                   <p>Ticket de Compra</p>
+                  {ticketData.isCredit && (
+                    <p className="font-bold border-y border-dashed border-black my-1 py-1">*** VENTA A CRÉDITO ***</p>
+                  )}
+                  {ticketData.customerName && (
+                    <p>Cliente: {ticketData.customerName}</p>
+                  )}
                   <p>{ticketData.date.toLocaleString()}</p>
                   <p className="text-[10px] mt-1 text-gray-500">Folio: {ticketData.id.split('-')[0]}</p>
                 </div>
@@ -406,6 +474,13 @@ export default function Pos() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="absolute top-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg font-medium animate-fade-in z-50">
+          {toastMessage}
         </div>
       )}
     </div>

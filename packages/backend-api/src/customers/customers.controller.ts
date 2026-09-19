@@ -32,4 +32,14 @@ export class CustomersController {
   remove(@Param('id') id: string) {
     return this.customersService.deactivate(id);
   }
+
+  @Post(':id/pay-debt')
+  payDebt(@Param('id') id: string, @Body('amount') amount: number) {
+    return this.customersService.payDebt(id, amount);
+  }
+
+  @Get(':id/credit-sales')
+  getCreditSales(@Param('id') id: string) {
+    return this.customersService.getCreditSales(id);
+  }
 }

@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
 import type { SaleDetail } from './sale-detail.entity.js';
+import { Customer } from '../../customers/entities/customer.entity.js';
 
 @Entity('sales')
 export class Sale {
@@ -20,6 +21,12 @@ export class Sale {
 
   @Column({ nullable: true })
   cashShiftId: string; // El turno de caja en el que se hizo la venta
+
+  @Column({ default: false })
+  isCredit: boolean;
+
+  @ManyToOne(() => Customer, { nullable: true })
+  customer: Customer;
 
   @CreateDateColumn()
   createdAt: Date;

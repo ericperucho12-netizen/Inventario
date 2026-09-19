@@ -4,4 +4,6 @@ export class CreateSaleDto {
     quantity: number;
     unitPrice: number;
   }[];
+  isCredit?: boolean;
+  customerId?: string;
 }

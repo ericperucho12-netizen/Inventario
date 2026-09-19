@@ -20,6 +20,9 @@ export class Customer {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  debt: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

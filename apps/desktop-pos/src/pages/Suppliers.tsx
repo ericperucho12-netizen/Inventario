@@ -1,162 +1,236 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
-import { Users, Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, Building2 } from 'lucide-react';
 
 interface Supplier {
   id: string;
   name: string;
   contactName: string;
-  email: string;
   phone: string;
+  email: string;
 }
 
 export default function Suppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({ name: '', contactName: '', email: '', phone: '' });
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+  // Form State
+  const [name, setName] = useState('');
+  const [contactName, setContactName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
 
   const fetchSuppliers = async () => {
     try {
       const res = await api.get('/suppliers');
       setSuppliers(res.data);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching suppliers:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
+  const handleOpenModal = (supplier?: Supplier) => {
+    if (supplier) {
+      setEditingSupplier(supplier);
+      setName(supplier.name);
+      setContactName(supplier.contactName || '');
+      setPhone(supplier.phone || '');
+      setEmail(supplier.email || '');
+    } else {
+      setEditingSupplier(null);
+      setName('');
+      setContactName('');
+      setPhone('');
+      setEmail('');
+    }
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingSupplier(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
-      if (isEditing && editingId) {
-        await api.patch(`/suppliers/${editingId}`, formData);
+      const payload = { 
+        name,
+        contactName,
+        phone,
+        email
+      };
+      
+      if (editingSupplier) {
+        await api.patch(`/suppliers/${editingSupplier.id}`, payload);
       } else {
-        await api.post('/suppliers', formData);
+        await api.post('/suppliers', payload);
       }
-      setShowModal(false);
-      fetchSuppliers();
+      await fetchSuppliers();
+      handleCloseModal();
     } catch (error) {
-      alert('Error guardando proveedor');
+      console.error('Error saving supplier:', error);
+      alert('Hubo un error al guardar el proveedor');
+    } finally {
+      setIsSubmitting(false);
     }
-  };
-
-  const openEdit = (s: Supplier) => {
-    setFormData({ name: s.name, contactName: s.contactName || '', email: s.email || '', phone: s.phone || '' });
-    setEditingId(s.id);
-    setIsEditing(true);
-    setShowModal(true);
-  };
-
-  const openNew = () => {
-    setFormData({ name: '', contactName: '', email: '', phone: '' });
-    setIsEditing(false);
-    setShowModal(true);
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Seguro que deseas eliminar este proveedor?')) {
-      await api.delete(`/suppliers/${id}`);
-      fetchSuppliers();
+    if (window.confirm('¿Estás seguro de eliminar este proveedor?')) {
+      try {
+        await api.delete(`/suppliers/${id}`);
+        fetchSuppliers();
+      } catch (error) {
+        console.error('Error deleting supplier:', error);
+        alert('Error al eliminar proveedor');
+      }
     }
   };
 
-  if (loading) return <div className="p-8 text-white flex items-center gap-2"><Loader2 className="animate-spin" /> Cargando proveedores...</div>;
-
   return (
-    <div className="p-8 bg-slate-950 min-h-full">
-      <header className="mb-8 flex justify-between items-center">
+    <div className="p-8 h-full flex flex-col">
+      <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Users className="h-8 w-8 text-emerald-500" />
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <Building2 className="h-8 w-8 text-blue-500" />
             Proveedores
           </h1>
-          <p className="text-slate-400 mt-1">Directorio de contactos comerciales.</p>
+          <p className="text-slate-400 mt-1">Administra las empresas que te surten mercancía</p>
         </div>
-        <button 
-          onClick={openNew}
-          className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-colors"
+        <button
+          onClick={() => handleOpenModal()}
+          className="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20"
         >
-          <Plus className="h-5 w-5" /> Nuevo Proveedor
+          <Plus className="h-5 w-5" />
+          Nuevo Proveedor
         </button>
       </header>
 
-      <div className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-800/50 text-slate-400 text-sm border-b border-white/10">
-              <th className="p-4 font-medium">Empresa</th>
-              <th className="p-4 font-medium">Contacto</th>
-              <th className="p-4 font-medium">Teléfono</th>
-              <th className="p-4 font-medium">Email</th>
-              <th className="p-4 font-medium text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="text-white text-sm divide-y divide-white/5">
-            {suppliers.map(s => (
-              <tr key={s.id} className="hover:bg-white/5 transition-colors">
-                <td className="p-4 font-bold">{s.name}</td>
-                <td className="p-4">{s.contactName || '-'}</td>
-                <td className="p-4">{s.phone || '-'}</td>
-                <td className="p-4 text-slate-400">{s.email || '-'}</td>
-                <td className="p-4 flex gap-2 justify-end">
-                  <button onClick={() => openEdit(s)} className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => handleDelete(s.id)} className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {suppliers.length === 0 && (
-              <tr>
-                <td colSpan={5} className="p-8 text-center text-slate-400">No hay proveedores registrados.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm flex-1 flex flex-col overflow-hidden">
+        {loading ? (
+          <div className="flex-1 flex justify-center items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto custom-scrollbar p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {suppliers.map(supplier => (
+                <div key={supplier.id} className="bg-slate-900/50 border border-white/5 rounded-xl p-6 relative group hover:border-blue-500/30 transition-colors">
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="p-3 bg-blue-500/10 text-blue-400 rounded-lg">
+                      <Building2 className="h-6 w-6" />
+                    </div>
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => handleOpenModal(supplier)} className="p-2 bg-slate-800 text-slate-300 hover:text-white rounded-lg transition-colors">
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button onClick={() => handleDelete(supplier.id)} className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <h3 className="text-lg font-bold text-white mb-1 line-clamp-1" title={supplier.name}>{supplier.name}</h3>
+                  <p className="text-sm text-slate-400 mb-4">{supplier.contactName || 'Sin contacto'}</p>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500">Tel:</span>
+                      <span className="text-slate-300 font-mono">{supplier.phone || '---'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-500">Email:</span>
+                      <span className="text-slate-300 line-clamp-1" title={supplier.email}>{supplier.email || '---'}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {suppliers.length === 0 && (
+                <div className="col-span-full py-12 text-center text-slate-500">
+                  <Building2 className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                  <p>No hay proveedores registrados.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {showModal && (
-        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-2xl relative">
-            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
-              <X className="h-6 w-6" />
-            </button>
-            <h2 className="text-2xl font-bold text-white mb-6">{isEditing ? 'Editar' : 'Nuevo'} Proveedor</h2>
-            
-            <form onSubmit={handleSubmit} className="space-y-4">
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-white/10">
+              <h2 className="text-xl font-bold">{editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Empresa / Razón Social *</label>
-                <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-emerald-500 focus:outline-none" />
+                <label className="block text-sm font-medium text-slate-400 mb-1">Nombre de la Empresa *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">Nombre de Contacto</label>
-                <input value={formData.contactName} onChange={e => setFormData({...formData, contactName: e.target.value})} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-emerald-500 focus:outline-none" />
+                <label className="block text-sm font-medium text-slate-400 mb-1">Nombre del Contacto (Agente)</label>
+                <input
+                  type="text"
+                  value={contactName}
+                  onChange={e => setContactName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Teléfono</label>
-                  <input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-emerald-500 focus:outline-none" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
-                  <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-white focus:border-emerald-500 focus:outline-none" />
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Teléfono</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-400 mb-1">Correo Electrónico</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                />
               </div>
               
-              <button type="submit" className="w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl transition-colors">
-                Guardar Proveedor
-              </button>
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 rounded-lg font-medium text-slate-300 hover:bg-white/5 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 bg-blue-500 hover:bg-blue-400 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {editingSupplier ? 'Guardar Cambios' : 'Crear Proveedor'}
+                </button>
+              </div>
             </form>
           </div>
         </div>

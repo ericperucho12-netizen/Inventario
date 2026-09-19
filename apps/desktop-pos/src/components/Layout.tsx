@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuthStore } from '../store/auth.store';
-import { LogOut, Package, Users, Settings, Home, BarChart3, LayoutDashboard, Building2, ShoppingCart } from 'lucide-react';
+import { LogOut, Package, Users, Settings, Home, BarChart3, LayoutDashboard, Building2, ShoppingCart, History } from 'lucide-react';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -105,6 +105,18 @@ export default function Layout() {
           </NavLink>
 
 
+
+          <NavLink
+            to="/history"
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                isActive ? 'bg-emerald-500 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`
+            }
+          >
+            <History className="h-5 w-5" />
+            <span>Historial</span>
+          </NavLink>
 
           <NavLink
             to="/reports"

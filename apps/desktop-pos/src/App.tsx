@@ -11,6 +11,7 @@ import Suppliers from './pages/Suppliers';
 import Purchases from './pages/Purchases';
 import Customers from './pages/Customers';
 import Settings from './pages/Settings';
+import History from './pages/History';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -32,6 +33,7 @@ function App() {
           <Route path="/customers" element={<Customers />} />
           <Route path="/suppliers" element={<Suppliers />} />
           <Route path="/purchases" element={<Purchases />} />
+          <Route path="/history" element={<History />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

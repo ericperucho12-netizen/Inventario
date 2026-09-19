@@ -1,10 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateSaleDto } from './dto/create-sale.dto.js';
-import { DataSource } from 'typeorm';
+import { DataSource, MoreThanOrEqual } from 'typeorm';
 import { Sale } from './entities/sale.entity.js';
 import { SaleDetail } from './entities/sale-detail.entity.js';
 import { Product } from '../products/entities/product.entity.js';
 import { CashShift } from '../cash-shifts/entities/cash-shift.entity.js';
+import { Customer } from '../customers/entities/customer.entity.js';
 
 @Injectable()
 export class SalesService {
@@ -61,6 +62,22 @@ export class SalesService {
       sale.details = saleDetails;
       sale.userId = userId;
       sale.cashShiftId = cashShift.id;
+      sale.isCredit = !!createSaleDto.isCredit;
+
+      if (createSaleDto.isCredit && createSaleDto.customerId) {
+        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId } });
+        if (!customer) {
+          throw new BadRequestException('Cliente no encontrado para la venta a crédito');
+        }
+        sale.customer = customer;
+        customer.debt = Number(customer.debt) + total;
+        await queryRunner.manager.save(customer);
+      } else if (createSaleDto.customerId) {
+        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId } });
+        if (customer) {
+          sale.customer = customer;
+        }
+      }
 
       const savedSale = await queryRunner.manager.save(sale);
       
@@ -75,9 +92,17 @@ export class SalesService {
     }
   }
 
-  findAll() {
+  findAll(days?: number) {
+    const where: any = {};
+    if (days) {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+      where.createdAt = MoreThanOrEqual(date);
+    }
+    
     return this.dataSource.manager.find(Sale, { 
-      relations: ['details', 'details.product'],
+      where,
+      relations: ['details', 'details.product', 'customer'],
       order: { createdAt: 'DESC' }
     });
   }
@@ -85,7 +110,7 @@ export class SalesService {
   async findOne(id: string) {
     return this.dataSource.manager.findOne(Sale, {
       where: { id },
-      relations: ['details', 'details.product']
+      relations: ['details', 'details.product', 'customer']
     });
   }
 
@@ -97,7 +122,7 @@ export class SalesService {
     try {
       const sale = await queryRunner.manager.findOne(Sale, {
         where: { id },
-        relations: ['details', 'details.product']
+        relations: ['details', 'details.product', 'customer']
       });
 
       if (!sale) throw new BadRequestException('Venta no encontrada');
@@ -114,6 +139,12 @@ export class SalesService {
       // Marcar venta como devuelta
       sale.status = 'REFUNDED';
       const updatedSale = await queryRunner.manager.save(sale);
+
+      // Revertir deuda si fue a crédito
+      if (sale.isCredit && sale.customer) {
+        sale.customer.debt = Math.max(0, Number(sale.customer.debt) - Number(sale.total));
+        await queryRunner.manager.save(sale.customer);
+      }
 
       await queryRunner.commitTransaction();
       return updatedSale;
