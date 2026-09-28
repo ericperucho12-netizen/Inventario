@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module.js';
 import { ExpensesModule } from './expenses/expenses.module.js';
 import { StripeModule } from './stripe/stripe.module.js';
 import { CompaniesModule } from './companies/companies.module.js';
+import { SuperadminModule } from './superadmin/superadmin.module.js';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { CompaniesModule } from './companies/companies.module.js';
     ExpensesModule,
     StripeModule,
     CompaniesModule,
+    SuperadminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

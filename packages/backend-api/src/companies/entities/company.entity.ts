@@ -14,6 +14,9 @@ export class Company {
   @Column({ nullable: true })
   logoUrl: string;
 
+  @Column({ default: true })
+  isActive: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 
