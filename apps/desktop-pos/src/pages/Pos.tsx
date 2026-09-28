@@ -368,9 +368,9 @@ export default function Pos() {
           <p className="text-slate-400 mb-6">
             No puedes realizar ventas en este momento. Debes iniciar tu turno y declarar un fondo inicial desde el Dashboard.
           </p>
-          <a href="/dashboard" className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition-colors inline-block">
+          <Link to="/dashboard" className="bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-6 rounded-xl transition-colors inline-block">
             Ir al Dashboard
-          </a>
+          </Link>
         </div>
       </div>
     );
