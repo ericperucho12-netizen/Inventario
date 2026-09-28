@@ -6,7 +6,7 @@ export class StripeService {
   private stripe: Stripe;
 
   constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy_key_to_prevent_crash', {
       apiVersion: '2025-02-24.acacia' as any, // Cast to any to bypass version mismatch in local types
     });
   }
