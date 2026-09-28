@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../lib/axios';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend
@@ -38,8 +38,13 @@ export default function DashboardHome() {
   const [declaredAmount, setDeclaredAmount] = useState('');
   const [ticketZ, setTicketZ] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [lowStockList, setLowStockList] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
+
+  // Computed reactively whenever products or threshold change
+  const lowStockList = useMemo(() =>
+    allProducts.filter(p => Number(p.stock) <= lowStockThreshold)
+  , [allProducts, lowStockThreshold]);
 
   useEffect(() => {
     fetchSummary();
@@ -53,10 +58,9 @@ export default function DashboardHome() {
       ]);
       setSummary(summaryRes.data);
       setShiftMetrics(shiftRes.data);
-      // Fetch low stock products for the list
+      // Fetch all products for low stock monitoring
       const lowRes = await api.get('/products');
-      const threshold = lowStockThreshold;
-      setLowStockList(lowRes.data.filter((p: any) => Number(p.stock) <= threshold && Number(p.stock) >= 0));
+      setAllProducts(lowRes.data);
     } catch (error) {
       console.error('Error fetching dashboard summary:', error);
     } finally {
@@ -291,13 +295,13 @@ export default function DashboardHome() {
         <Link to="/catalog" className="bg-slate-900/50 border border-red-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group hover:border-red-500/40 transition-all cursor-pointer">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-red-500/10 rounded-full blur-xl group-hover:bg-red-500/20 transition-all"></div>
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-red-500/20 text-red-400 rounded-xl animate-pulse">
+            <div className={`p-3 bg-red-500/20 text-red-400 rounded-xl ${lowStockList.length > 0 ? 'animate-pulse' : ''}`}>
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <h3 className="text-slate-400 font-medium">Bajo Stock (≤ 5)</h3>
+            <h3 className="text-slate-400 font-medium">Bajo Stock (≤ {lowStockThreshold})</h3>
           </div>
           <p className="text-3xl font-bold text-red-400 mb-1">
-            {summary.lowStockProducts}
+            {lowStockList.length}
           </p>
           <span className="text-xs text-red-400/50 mt-auto flex items-center gap-1 group-hover:text-red-400/80">
             Click para revisar inventario <TrendingUp className="h-3 w-3" />
