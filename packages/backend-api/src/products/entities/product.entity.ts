@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import type { Category } from '../../categories/entities/category.entity.js';
 import { Company } from '../../companies/entities/company.entity.js';
 
 @Entity('products')
+@Unique(['companyId', 'barcode'])
 export class Product {
   @Column({ nullable: true }) // TODO: Change to false when forcing multi-tenant
   companyId: string;
@@ -14,7 +15,7 @@ export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   barcode: string;
 
   @Column()
