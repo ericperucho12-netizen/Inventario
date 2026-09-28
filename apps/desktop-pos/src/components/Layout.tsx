@@ -111,9 +111,12 @@ export default function Layout() {
             <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-900">
               P
             </div>
-            <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-              PeruchOS
-            </h2>
+            <div className="flex flex-col">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent leading-none">
+                PeruchOS
+              </h2>
+              <span className="text-[10px] text-teal-500/70 font-medium uppercase tracking-widest mt-0.5">Operating System</span>
+            </div>
           </div>
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
@@ -139,9 +142,12 @@ export default function Layout() {
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
         <div className="p-4 lg:p-6 flex items-center justify-between lg:justify-start">
-          <h2 className="hidden lg:block text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-            PeruchOS
-          </h2>
+          <div className="hidden lg:flex flex-col">
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent leading-none">
+              PeruchOS
+            </h2>
+            <span className="text-[10px] text-teal-500/70 font-medium uppercase tracking-widest mt-1">Operating System</span>
+          </div>
           <div className="lg:hidden h-8 w-8 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-900">
             P
           </div>

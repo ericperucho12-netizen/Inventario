@@ -106,7 +106,9 @@ export default function Login() {
         
         {/* Greeting */}
         <div className="mb-10 flex flex-col items-center text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-tr from-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">PeruchOS</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-tr from-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">
+            PeruchOS <span className="text-sm font-medium text-indigo-500/50 block mt-1 tracking-normal">Operating System</span>
+          </h1>
           <p className="text-base text-slate-400">{isRegistering ? 'Crea una nueva cuenta para tu negocio' : 'Ingresa a tu cuenta para continuar'}</p>
         </div>
 
