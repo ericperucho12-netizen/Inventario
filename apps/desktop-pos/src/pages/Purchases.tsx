@@ -484,10 +484,10 @@ export default function Purchases() {
                   </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 mb-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3">
                   {/* Costo de Compra */}
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Costo unitario ($)</label>
+                    <label className="text-[10px] sm:text-xs text-slate-400 mb-1 block whitespace-nowrap overflow-hidden text-ellipsis">Costo unitario ($)</label>
                     <input 
                       type="number" 
                       min="0"
@@ -499,7 +499,7 @@ export default function Purchases() {
                   </div>
                   {/* Cantidad */}
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Cantidad que llegó</label>
+                    <label className="text-[10px] sm:text-xs text-slate-400 mb-1 block whitespace-nowrap overflow-hidden text-ellipsis">Cant. que llegó</label>
                     <div className="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1">
                       <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0">
                         <Minus className="h-3 w-3" />
@@ -525,9 +525,9 @@ export default function Purchases() {
                 </div>
 
                 {/* Precio de Venta y Margen */}
-                <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-4">
+                <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-2 sm:gap-4">
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                    <label className="text-[10px] sm:text-xs text-slate-400 mb-1 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
                       <TrendingUp className="h-3 w-3 text-indigo-400" /> 
                       Margen (%)
                     </label>
@@ -546,7 +546,7 @@ export default function Purchases() {
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Precio Venta ($)</label>
+                    <label className="text-[10px] sm:text-xs text-slate-400 mb-1 block whitespace-nowrap overflow-hidden text-ellipsis">Precio Venta ($)</label>
                     <input 
                       type="number" 
                       min="0"
