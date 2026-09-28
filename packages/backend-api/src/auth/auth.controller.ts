@@ -1,4 +1,4 @@
-import { Controller, Request, Post, UseGuards, Get } from '@nestjs/common';
+import { Controller, Request, Post, UseGuards, Get, Body } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './guards/jwt-auth.guard.js';
@@ -12,6 +12,11 @@ export class AuthController {
   async login(@Request() req: any) {
     // req.user es inyectado por LocalStrategy después de validar exitosamente
     return this.authService.login(req.user);
+  }
+
+  @Post('register')
+  async register(@Body() body: any) {
+    return this.authService.register(body);
   }
 
   @UseGuards(JwtAuthGuard)

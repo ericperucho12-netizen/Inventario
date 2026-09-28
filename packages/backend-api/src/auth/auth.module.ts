@@ -7,10 +7,14 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthController } from './auth.controller.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Company } from '../companies/entities/company.entity.js';
+import { User } from '../users/entities/user.entity.js';
 
 @Global()
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Company, User]),
     forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
