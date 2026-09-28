@@ -47,14 +47,14 @@ export class SuperadminController {
   }
 
   @Patch('companies/:id/approve-subscription')
-  async approveSubscription(@Request() req: any, @Param('id') id: string) {
+  async approveSubscription(@Request() req: any, @Param('id') id: string, @Body('months') months: number = 1) {
     this.ensureSuperAdmin(req);
     
     // Buscar al dueño de la empresa (PROPIETARIO)
     const owner = await this.userRepository.findOne({ where: { companyId: id, role: 'PROPIETARIO' as any } });
     if (!owner) throw new ForbiddenException('No se encontró al propietario de la empresa');
 
-    // Calcular nueva fecha: 1 mes a partir de hoy (o sumarle 1 mes si ya tenía saldo a favor)
+    // Calcular nueva fecha: X meses a partir de hoy (o sumarle X meses si ya tenía saldo a favor)
     let newBillingDate = new Date();
     if (owner.nextBillingDate) {
       const currentNext = new Date(owner.nextBillingDate);
@@ -62,7 +62,7 @@ export class SuperadminController {
         newBillingDate = currentNext;
       }
     }
-    newBillingDate.setMonth(newBillingDate.getMonth() + 1);
+    newBillingDate.setMonth(newBillingDate.getMonth() + months);
 
     await this.userRepository.update(owner.id, {
       isSubscribed: true,

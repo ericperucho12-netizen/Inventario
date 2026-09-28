@@ -1,5 +1,6 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service.js';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -23,6 +24,12 @@ export class AuthService {
   async validateUser(username: string, pass: string): Promise<any> {
     const user = await this.usersService.findByUsername(username);
     if (user && await bcrypt.compare(pass, user.passwordHash)) {
+      if (user.companyId) {
+        const company = await this.companyRepository.findOne({ where: { id: user.companyId } });
+        if (company && !company.isActive) {
+          throw new UnauthorizedException('Tu empresa ha sido suspendida. Contacta a soporte.');
+        }
+      }
       const { passwordHash, ...result } = user;
       return result;
     }

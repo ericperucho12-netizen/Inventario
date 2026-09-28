@@ -38,11 +38,12 @@ export const SuperAdminDashboard = () => {
     }
   };
 
-  const approveSubscription = async (id: string) => {
-    if (!window.confirm('¿Seguro que deseas registrar un pago manual (1 mes extra) para esta empresa?')) return;
+  const approveSubscription = async (id: string, months: number) => {
+    const label = months === 1 ? '1 mes extra' : '1 año extra';
+    if (!window.confirm(`¿Seguro que deseas registrar un pago manual (${label}) para esta empresa?`)) return;
     try {
-      await api.patch(`/superadmin/companies/${id}/approve-subscription`);
-      alert('Pago registrado correctamente. La empresa tiene 1 mes más de acceso.');
+      await api.patch(`/superadmin/companies/${id}/approve-subscription`, { months });
+      alert(`Pago registrado correctamente. La empresa tiene ${label} de acceso.`);
       fetchData();
     } catch (error) {
       console.error(error);
@@ -80,11 +81,18 @@ export const SuperAdminDashboard = () => {
                   </td>
                   <td className="p-4 text-right flex justify-end gap-2">
                     <button
-                      onClick={() => approveSubscription(c.id)}
-                      className="text-sm font-bold px-3 py-2 rounded-lg transition-colors border bg-indigo-600/20 text-indigo-400 hover:text-white hover:bg-indigo-600 border-indigo-600/30"
+                      onClick={() => approveSubscription(c.id, 1)}
+                      className="text-sm font-bold px-3 py-2 rounded-lg transition-colors border bg-blue-600/20 text-blue-400 hover:text-white hover:bg-blue-600 border-blue-600/30"
                       title="Aprobar pago en efectivo por 1 mes"
                     >
-                      Aprobar Mes
+                      + 1 Mes
+                    </button>
+                    <button
+                      onClick={() => approveSubscription(c.id, 12)}
+                      className="text-sm font-bold px-3 py-2 rounded-lg transition-colors border bg-indigo-600/20 text-indigo-400 hover:text-white hover:bg-indigo-600 border-indigo-600/30"
+                      title="Aprobar pago en efectivo por 1 año"
+                    >
+                      + 1 Año
                     </button>
                     <button
                       onClick={() => toggleStatus(c.id, c.isActive)}
