@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle, Palette } from 'lucide-react';
+import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle, Palette, Scale } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
 
 export default function Settings() {
   const { 
-    defaultPrinter, scannerEnabled, theme, 
+    defaultPrinter, scannerEnabled, scaleEnabled, theme, 
     storeName, storeAddress, storePhone, taxRate,
-    setDefaultPrinter, setScannerEnabled, setTheme,
+    setDefaultPrinter, setScannerEnabled, setScaleEnabled, setTheme,
     setStoreInfo, setTaxRate 
   } = useSettingsStore();
   const [printers, setPrinters] = useState<{ name: string; isDefault: boolean }[]>([]);
@@ -136,7 +136,10 @@ export default function Settings() {
           {!isDesktop ? (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex gap-3 text-amber-400 mb-6">
               <AlertCircle className="h-5 w-5 shrink-0" />
-              <p className="text-sm">La configuración avanzada de impresoras solo está disponible en la versión de escritorio. Usando la versión web, las impresiones mostrarán el diálogo estándar del navegador.</p>
+              <p className="text-sm">
+                Las impresiones desde navegadores web (PC, Tablet, o Celular) utilizan el diálogo nativo de tu dispositivo. 
+                Si tienes una impresora conectada por <b>Bluetooth, USB, o WiFi</b>, el sistema la detectará y podrás enviar el ticket normalmente.
+              </p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -184,7 +187,7 @@ export default function Settings() {
               </div>
               <div>
                 <span className="text-white font-medium block mb-1 group-hover:text-slate-400 transition-colors">Habilitar Escaneo Automático (Recomendado)</span>
-                <p className="text-slate-400 text-sm">Permite que el sistema detecte disparos rápidos del lector en cualquier momento (Punto de Venta o Compras) y procese el código de inmediato, sin importar dónde esté el cursor.</p>
+                <p className="text-slate-400 text-sm">Permite que el sistema detecte disparos rápidos del lector (USB, Bluetooth, integrado) en cualquier momento y procese el código de inmediato.</p>
               </div>
             </label>
 
@@ -201,8 +204,44 @@ export default function Settings() {
                   }
                 }}
               />
-              <p className="text-xs text-slate-500 text-center mt-2">Al escanear, el código debería aparecer y disparar una alerta de éxito automáticamente.</p>
             </div>
+          </div>
+        </section>
+
+        {/* Sección de Básculas */}
+        <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+            <Scale className="h-6 w-6 text-green-400" />
+            <h2 className="text-xl font-bold text-white">Conexión de Básculas</h2>
+          </div>
+
+          <div className="space-y-6">
+            <label className="flex items-start gap-4 cursor-pointer group">
+              <div className="relative flex items-start">
+                <input 
+                  type="checkbox" 
+                  className="sr-only" 
+                  checked={scaleEnabled}
+                  onChange={(e) => setScaleEnabled(e.target.checked)}
+                />
+                <div className={`w-14 h-7 rounded-full transition-colors flex items-center ${scaleEnabled ? 'bg-slate-500' : 'bg-slate-700'}`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${scaleEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+                </div>
+              </div>
+              <div>
+                <span className="text-white font-medium block mb-1 group-hover:text-slate-400 transition-colors">Integración con Báscula</span>
+                <p className="text-slate-400 text-sm">Activa la interfaz para leer el peso de básculas conectadas (Bluetooth o USB). Al activarlo, aparecerá el botón de "Obtener Peso" en los productos que se venden a granel.</p>
+              </div>
+            </label>
+            
+            {scaleEnabled && !isDesktop && (
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 flex gap-3 text-blue-400">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <p className="text-sm">
+                  <b>Nota para versión web/móvil:</b> Si usas una báscula Bluetooth moderna compatible con Web Bluetooth, el sistema podrá conectarse. Si tienes una báscula antigua con cable serial (COM), necesitarás usar la aplicación de escritorio de PeruchOS para leer el peso automáticamente.
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
