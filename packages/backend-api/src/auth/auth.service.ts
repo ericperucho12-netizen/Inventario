@@ -66,7 +66,7 @@ export class AuthService {
     });
 
     // Crear categorías por defecto para la nueva empresa
-    const defaultCategories = ['Abarrotes', 'Bebidas', 'Botanas', 'Lácteos', 'Limpieza', 'Varios'];
+    const defaultCategories = ["Aceites y Mantecas","Arroz, Frijoles y Semillas","Azúcar y Sal","Café, Té y Sustitutos de Crema","Cereales y Avenas","Enlatados y Conservas","Especias y Condimentos","Harinas y Repostería","Mayonesas, Aderezos y Salsas","Pastas y Sopas","Agua Natural y Mineral","Bebidas Energizantes e Hidratantes","Jugos y Néctares","Refrescos / Gaseosas","Cervezas","Vinos y Licores","Botanas Saladas","Chocolates","Dulces, Chicles y Caramelos","Galletas","Gelatinas y Flanes","Leche","Quesos","Yogurt y Bebidas Lácteas","Mantequilla y Margarina","Carnes Frías y Embutidos","Pan Dulce Empacado","Pan de Caja","Tortillas y Tostadas","Cloro y Desinfectantes","Detergentes y Suavizantes","Insecticidas y Repelentes","Lavastrastes","Limpiadores de Pisos y Vidrios","Papel Higiénico y Servilletas","Utensilios de Limpieza","Cuidado Bucal","Cuidado del Cabello","Desodorantes y Talcos","Jabón de Tocador","Protección Femenina","Rastrillos y Cremas de Afeitar","Cuidado del Bebé","Analgésicos y Antigripales","Antiácidos y Digestivos","Primeros Auxilios","Frutas Frescas","Verduras y Legumbres","Huevo","Helados y Paletas","Hielo","Alimento para Perros","Alimento para Gatos","Accesorios para Mascotas","Cigarros","Encendedores y Cerillos","Vasos, Platos y Cubiertos Desechables","Carbón","Bolsas de Plástico/Papel","Artículos para Fiestas","Recargas Telefónicas","Pago de Servicios","Electrónica Básica y Ferretería"];
     for (const catName of defaultCategories) {
       await this.categoryRepository.save({
         name: catName,
