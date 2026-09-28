@@ -22,6 +22,13 @@ const PayDebtModal = ({
 }) => {
   const [payAmount, setPayAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [creditSales, setCreditSales] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get(`/customers/${payingCustomer.id}/credit-sales`)
+      .then(res => setCreditSales(res.data))
+      .catch(() => {});
+  }, [payingCustomer.id]);
 
   const handlePaySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,16 +52,46 @@ const PayDebtModal = ({
     }
   };
 
+  const remaining = Number(payingCustomer.debt) - (parseFloat(payAmount) || 0);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-sm rounded-2xl border border-amber-500/20 bg-slate-900 p-6 shadow-2xl">
-        <h2 className="mb-2 text-xl font-bold text-white">
-          Abonar a Deuda
-        </h2>
-        <p className="text-slate-400 text-sm mb-4">
-          Cliente: <span className="font-bold text-white">{payingCustomer.name}</span><br />
-          Deuda Total: <span className="font-bold text-amber-400">${Number(payingCustomer.debt).toFixed(2)}</span>
-        </p>
+      <div className="w-full max-w-md rounded-2xl border border-amber-500/20 bg-slate-900 p-6 shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white">Abonar a Deuda</h2>
+          <div className="text-right">
+            <p className="text-xs text-slate-400">Deuda total</p>
+            <p className="text-2xl font-bold text-amber-400">${Number(payingCustomer.debt).toFixed(2)}</p>
+          </div>
+        </div>
+        <p className="text-slate-400 text-sm mb-4">Cliente: <strong className="text-white">{payingCustomer.name}</strong></p>
+
+        {/* Desglose de ventas pendientes */}
+        {creditSales.length > 0 && (
+          <div className="mb-4">
+            <p className="text-xs text-slate-400 font-medium mb-2">Compras pendientes de pago:</p>
+            <div className="space-y-1 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+              {creditSales.map((sale: any) => (
+                <div key={sale.id} className="flex items-center justify-between gap-2 bg-slate-800/60 border border-amber-500/10 rounded-lg px-3 py-2">
+                  <div>
+                    <p className="text-xs text-slate-300">{new Date(sale.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500">{sale.details?.length || 0} producto(s)</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-amber-400">${Number(sale.total).toFixed(2)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setPayAmount(Number(sale.total).toFixed(2))}
+                      className="text-xs bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 px-2 py-1 rounded transition-colors"
+                    >
+                      Pagar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         <form onSubmit={handlePaySubmit} className="space-y-4">
           <div>
@@ -70,6 +107,19 @@ const PayDebtModal = ({
               onChange={e => setPayAmount(e.target.value)} 
               className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-amber-500 focus:outline-none text-2xl font-bold" 
             />
+            {payAmount && parseFloat(payAmount) > 0 && (
+              <div className="mt-2 flex justify-between text-sm">
+                <span className="text-slate-400">Saldo restante después:</span>
+                <span className={`font-bold ${remaining <= 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {remaining <= 0 ? '\u2714 Deuda saldada' : `$${remaining.toFixed(2)}`}
+                </span>
+              </div>
+            )}
+            {/* Botones rápidos */}
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={() => setPayAmount((Number(payingCustomer.debt) / 2).toFixed(2))} className="flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 rounded-lg transition-colors">Mitad</button>
+              <button type="button" onClick={() => setPayAmount(Number(payingCustomer.debt).toFixed(2))} className="flex-1 text-xs bg-amber-500/20 hover:bg-amber-500/40 text-amber-400 py-1.5 rounded-lg font-bold transition-colors">Todo (${Number(payingCustomer.debt).toFixed(2)})</button>
+            </div>
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
