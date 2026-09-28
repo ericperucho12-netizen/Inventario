@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/axios';
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Search, Loader2, Printer, X, CheckCircle2, User, FileText, PackageOpen, Filter, Users, Barcode } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Search, Loader2, Printer, X, CheckCircle2, User, FileText, PackageOpen, Filter, Users, Barcode, Scale } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
 import { useOfflineStore } from '../store/offline.store';
 import { Link, useNavigate } from 'react-router-dom';
@@ -54,7 +54,7 @@ export default function Pos() {
   const ticketRef = useRef<HTMLDivElement>(null);
   
   // Custom Settings
-  const { defaultPrinter, scannerEnabled, storeName, storeAddress, storePhone, taxRate } = useSettingsStore();
+  const { defaultPrinter, scannerEnabled, scaleEnabled, storeName, storeAddress, storePhone, taxRate } = useSettingsStore();
   const barcodeBuffer = useRef('');
   const lastKeyTime = useRef(Date.now());
   const { cachedProducts, setCachedProducts, cachedCustomers, setCachedCustomers, addPendingSale } = useOfflineStore();
@@ -185,15 +185,35 @@ export default function Pos() {
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.product.id === productId) {
-        const newQuantity = Math.max(1, item.quantity + delta);
-        // if (newQuantity > item.product.stock) {
-        //   alert(`No hay suficiente stock`);
-        //   return item;
-        // }
-        return { ...item, quantity: newQuantity };
+        // Permitir decimales en caso de productos pesados
+        const newQuantity = Math.max(0.001, item.quantity + delta);
+        return { ...item, quantity: Number(newQuantity.toFixed(3)) };
       }
       return item;
     }));
+  };
+
+  const setExactQuantity = (productId: string, exactQty: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.product.id === productId) {
+        return { ...item, quantity: Math.max(0.001, exactQty) };
+      }
+      return item;
+    }));
+  };
+
+  const handleReadScale = async (productId: string) => {
+    // Si tuviéramos Web Bluetooth, aquí iría la lógica.
+    // Por ahora, le pedimos al usuario el peso exacto.
+    const weight = window.prompt("Ingresa el peso exacto leído por la báscula (ej. 1.250):", "1.000");
+    if (weight !== null) {
+      const numWeight = parseFloat(weight);
+      if (!isNaN(numWeight) && numWeight > 0) {
+        setExactQuantity(productId, numWeight);
+      } else {
+        alert("Peso inválido.");
+      }
+    }
   };
 
   const removeFromCart = (productId: string) => {
@@ -494,10 +514,31 @@ export default function Pos() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400">${item.product.sellingPrice} c/u</p>
                   <div className="flex items-center gap-3">
+                    {scaleEnabled && (
+                      <button 
+                        onClick={() => handleReadScale(item.product.id)} 
+                        className="p-1 rounded bg-green-500/20 hover:bg-green-500/30 transition-colors text-green-400 mr-2"
+                        title="Leer peso desde báscula"
+                      >
+                        <Scale className="h-4 w-4" />
+                      </button>
+                    )}
                     <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="font-semibold w-4 text-center">{item.quantity}</span>
+                    <input 
+                      type="number"
+                      step="0.001"
+                      min="0.001"
+                      value={item.quantity}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) {
+                          setExactQuantity(item.product.id, val);
+                        }
+                      }}
+                      className="w-16 bg-slate-950 border border-slate-700 rounded text-center text-sm font-semibold text-white py-1 focus:outline-none focus:border-emerald-500 appearance-none m-0"
+                    />
                     <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
                       <Plus className="h-4 w-4" />
                     </button>
