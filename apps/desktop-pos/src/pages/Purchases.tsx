@@ -338,7 +338,7 @@ export default function Purchases() {
   });
 
   return (
-    <div className="flex flex-col xl:flex-row flex-1 h-[calc(100vh-3.5rem)] md:h-full bg-slate-950 text-white relative overflow-hidden">
+    <div className="flex flex-col xl:flex-row min-h-screen xl:h-full bg-slate-950 text-white relative">
       {/* Global Fetch Loading Overlay */}
       {isFetchingGlobal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
@@ -433,7 +433,7 @@ export default function Purchases() {
           </div>
         </div>
 
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto custom-scrollbar bg-slate-950">
+        <div className="flex-1 p-4 md:p-6 overflow-y-visible xl:overflow-y-auto custom-scrollbar bg-slate-950">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
             {filteredProducts.map(product => (
               <button
@@ -457,7 +457,7 @@ export default function Purchases() {
       </div>
 
       {/* Lado Derecho: Carrito de Compra */}
-      <div className="w-full xl:w-[450px] h-[50vh] xl:h-full border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col shadow-2xl z-10 shrink-0">
+      <div className="w-full xl:w-[450px] border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col xl:h-full shadow-2xl z-10 shrink-0">
         <div className="p-4 md:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur z-10">
           <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-blue-400" />
@@ -468,7 +468,7 @@ export default function Purchases() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-visible xl:overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
               <ShoppingCart className="h-12 w-12 opacity-20" />
