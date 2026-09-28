@@ -18,10 +18,11 @@ export const SuperAdminDashboard = () => {
 
   const fetchData = async () => {
     try {
-      const res = await api.get('/superadmin/companies');
+      const res = await api.get(`/superadmin/companies?t=${new Date().getTime()}`);
       setCompanies(res.data);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error('Fetch error:', error);
+      alert(`API Error: ${error.message} - ${api.defaults.baseURL}`);
     } finally {
       setLoading(false);
     }
@@ -101,6 +102,9 @@ export const SuperAdminDashboard = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div className="mt-8 text-center text-slate-600 text-xs font-mono">
+          DEBUG API: {api.defaults.baseURL}
         </div>
       </div>
     </div>
