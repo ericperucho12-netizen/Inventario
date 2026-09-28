@@ -38,6 +38,8 @@ export default function DashboardHome() {
   const [declaredAmount, setDeclaredAmount] = useState('');
   const [ticketZ, setTicketZ] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lowStockList, setLowStockList] = useState<any[]>([]);
+  const [lowStockThreshold, setLowStockThreshold] = useState(5);
 
   useEffect(() => {
     fetchSummary();
@@ -51,6 +53,10 @@ export default function DashboardHome() {
       ]);
       setSummary(summaryRes.data);
       setShiftMetrics(shiftRes.data);
+      // Fetch low stock products for the list
+      const lowRes = await api.get('/products');
+      const threshold = lowStockThreshold;
+      setLowStockList(lowRes.data.filter((p: any) => Number(p.stock) <= threshold && Number(p.stock) >= 0));
     } catch (error) {
       console.error('Error fetching dashboard summary:', error);
     } finally {
@@ -191,6 +197,51 @@ export default function DashboardHome() {
           </div>
         )}
       </header>
+
+      {/* ALERTA DE STOCK BAJO */}
+      {lowStockList.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/20 text-red-400 rounded-lg animate-pulse">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-red-400">¡Alerta! {lowStockList.length} producto(s) con stock bajo (≤ {lowStockThreshold})</h3>
+                <p className="text-xs text-slate-400">Considera reabastecer pronto para no quedarte sin mercancía.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-xs text-slate-400 whitespace-nowrap">Límite de alerta:</label>
+              <input
+                type="number"
+                min="1"
+                value={lowStockThreshold}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 0) setLowStockThreshold(val);
+                }}
+                className="w-16 bg-slate-950 border border-red-500/30 rounded-lg px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-red-500"
+              />
+              <Link to="/purchases" className="bg-red-500 hover:bg-red-400 text-white text-sm font-bold py-2 px-4 rounded-xl transition-colors whitespace-nowrap">
+                + Reponer Stock
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 max-h-40 overflow-y-auto custom-scrollbar pr-1">
+            {lowStockList.map((prod: any) => (
+              <div key={prod.id} className="flex items-center justify-between gap-2 bg-slate-900/80 border border-red-500/20 rounded-xl px-3 py-2">
+                <span className="text-sm text-white truncate flex-1" title={prod.description}>{prod.description}</span>
+                <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                  Number(prod.stock) <= 0 ? 'bg-red-600/30 text-red-300' : 'bg-orange-500/20 text-orange-400'
+                }`}>
+                  {Number(prod.stock) <= 0 ? 'AGOTADO' : `${prod.stock} ${prod.isBulk ? 'kg' : 'pzas'}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tarjetas Principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
