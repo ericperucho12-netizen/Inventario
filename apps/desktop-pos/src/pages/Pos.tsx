@@ -357,7 +357,7 @@ export default function Pos() {
   }
 
   return (
-    <div className="flex flex-col xl:flex-row flex-1 min-h-screen xl:min-h-0 xl:h-full bg-slate-950 font-sans relative">
+    <div className="flex flex-col xl:flex-row flex-1 h-[calc(100vh-3.5rem)] md:h-full bg-slate-950 font-sans relative overflow-hidden">
       
       {/* Camera Scanner Modal */}
       {showCameraScanner && (
@@ -461,7 +461,7 @@ export default function Pos() {
       </div>
 
       {/* Lado Derecho: Carrito (Ticket) */}
-      <div className="w-full xl:w-[400px] xl:h-full border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col shadow-2xl z-10 shrink-0">
+      <div className="w-full xl:w-[400px] h-[45vh] xl:h-full border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col shadow-2xl z-10 shrink-0">
         <div className="p-3 lg:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur z-10">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-emerald-400" />
