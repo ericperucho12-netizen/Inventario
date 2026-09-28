@@ -2,8 +2,9 @@ import axios from 'axios';
 import { useAuthStore } from '../store/auth.store';
 
 export const getApiUrl = () => {
-  // Si estamos accediendo desde un celular (IP), usar el proxy de Vite
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.protocol.startsWith('http')) {
+  // Si estamos accediendo desde un celular (IP) en modo DEV, usar el proxy de Vite
+  // @ts-ignore - import.meta.env exists in Vite
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && import.meta.env.DEV) {
     return window.location.origin + '/api';
   }
 
