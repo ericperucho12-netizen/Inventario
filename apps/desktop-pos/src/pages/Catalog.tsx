@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
-import { PackageOpen, Tags, Plus, Loader2, Search, Filter } from 'lucide-react';
+import { PackageOpen, Tags, Plus, Loader2, Search, Filter, SlidersHorizontal } from 'lucide-react';
 import { COMMON_PRODUCTS } from '../lib/commonProducts';
 
 interface Category {
@@ -48,6 +48,12 @@ export default function Catalog() {
   const [prodIsBulk, setProdIsBulk] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Adjust stock state
+  const [adjustProduct, setAdjustProduct] = useState<Product | null>(null);
+  const [adjustDelta, setAdjustDelta] = useState('');
+  const [adjustReason, setAdjustReason] = useState('');
+  const [isAdjusting, setIsAdjusting] = useState(false);
 
   // Autofill logic for global catalog
   useEffect(() => {
@@ -154,6 +160,25 @@ export default function Catalog() {
       alert('Error guardando producto. Verifique los datos.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAdjustStock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adjustProduct) return;
+    const delta = parseFloat(adjustDelta);
+    if (isNaN(delta) || delta === 0) { alert('Ingresa un valor válido (positivo para agregar, negativo para quitar).'); return; }
+    setIsAdjusting(true);
+    try {
+      await api.post(`/products/${adjustProduct.id}/adjust`, { delta, reason: adjustReason || 'Sin motivo' });
+      setAdjustProduct(null);
+      setAdjustDelta('');
+      setAdjustReason('');
+      fetchData();
+    } catch (error) {
+      alert('Error ajustando el inventario.');
+    } finally {
+      setIsAdjusting(false);
     }
   };
 
@@ -318,6 +343,13 @@ export default function Catalog() {
                       Editar
                     </button>
                     <button 
+                      onClick={() => { setAdjustProduct(prod); setAdjustDelta(''); setAdjustReason(''); }}
+                      className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors mr-4"
+                      title="Ajustar Stock"
+                    >
+                      Ajustar
+                    </button>
+                    <button 
                       onClick={() => handleDeleteProduct(prod.id, prod.description)}
                       className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
                     >
@@ -419,6 +451,84 @@ export default function Catalog() {
                 </button>
                 <button type="submit" disabled={isSubmitting} className="rounded-lg bg-purple-500 px-4 py-2 font-medium text-white hover:bg-purple-400 transition-colors disabled:opacity-50">
                   Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AJUSTE DE INVENTARIO */}
+      {adjustProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl">
+                <SlidersHorizontal className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Ajuste de Inventario</h2>
+                <p className="text-xs text-slate-400 truncate max-w-[220px]">{adjustProduct.description}</p>
+              </div>
+            </div>
+            <div className="mb-4 p-3 rounded-xl bg-slate-800 flex justify-between items-center">
+              <span className="text-slate-400 text-sm">Stock actual:</span>
+              <span className="font-bold text-white text-lg">{adjustProduct.stock} {adjustProduct.isBulk ? 'kg' : 'pzas'}</span>
+            </div>
+            <form onSubmit={handleAdjustStock} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Cantidad a ajustar (+ para agregar, - para quitar)
+                </label>
+                <input
+                  type="number"
+                  step={adjustProduct.isBulk ? '0.001' : '1'}
+                  required
+                  autoFocus
+                  placeholder="Ej: -3 (quitar 3) ó +10 (agregar 10)"
+                  value={adjustDelta}
+                  onChange={e => setAdjustDelta(e.target.value)}
+                  className="w-full rounded-lg border border-amber-500/30 bg-slate-800 p-2 text-white focus:border-amber-500 focus:outline-none"
+                />
+                {adjustDelta && !isNaN(parseFloat(adjustDelta)) && (
+                  <p className="text-xs text-slate-400 mt-1">
+                    Stock nuevo: <strong className="text-white">{Math.max(0, Number(adjustProduct.stock) + parseFloat(adjustDelta))} {adjustProduct.isBulk ? 'kg' : 'pzas'}</strong>
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Motivo (opcional)</label>
+                <select
+                  value={adjustReason}
+                  onChange={e => setAdjustReason(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-amber-500 focus:outline-none"
+                >
+                  <option value="">Selecciona un motivo...</option>
+                  <option value="Merma / Pérdida">Merma / Pérdida</option>
+                  <option value="Producto Caducado">Producto Caducado</option>
+                  <option value="Daño / Rotura">Daño / Rotura</option>
+                  <option value="Robo">Robo</option>
+                  <option value="Corrección de conteo">Corrección de conteo</option>
+                  <option value="Donación">Donación</option>
+                  <option value="Consumo interno">Consumo interno</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdjustProduct(null)}
+                  className="flex-1 rounded-lg border border-slate-700 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAdjusting}
+                  className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-bold text-white hover:bg-amber-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isAdjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Confirmar Ajuste
                 </button>
               </div>
             </form>

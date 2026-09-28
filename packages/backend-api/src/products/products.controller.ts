@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Patch, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Patch, Request, HttpCode } from '@nestjs/common';
 import { ProductsService } from './products.service.js';
 import { Product } from './entities/product.entity.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -31,5 +31,17 @@ export class ProductsController {
   @Delete(':id')
   remove(@Request() req: any, @Param('id') id: string) {
     return this.productsService.deactivate(id, req.user.companyId);
+  }
+
+  @Post(':id/adjust')
+  @HttpCode(200)
+  async adjustStock(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { delta: number; reason: string }
+  ) {
+    const product = await this.productsService.findOne(id, req.user.companyId);
+    const newStock = Math.max(0, Number(product.stock) + body.delta);
+    return this.productsService.update(id, { stock: newStock } as any, req.user.companyId);
   }
 }
