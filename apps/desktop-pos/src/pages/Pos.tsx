@@ -371,7 +371,7 @@ export default function Pos() {
       )}
 
       {/* Lado Izquierdo: Catálogo y Búsqueda */}
-      <div className="flex-1 flex flex-col p-4 md:p-6 xl:h-full overflow-hidden">
+      <div className="flex-1 flex flex-col p-4 md:p-6 xl:h-full xl:overflow-hidden">
         <div className="mb-4 lg:mb-6 flex flex-col md:flex-row gap-3 lg:gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />

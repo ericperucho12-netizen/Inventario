@@ -371,7 +371,7 @@ export default function Purchases() {
       )}
 
       {/* Lado Izquierdo: Buscador y Catálogo */}
-      <div className="flex-1 flex flex-col xl:h-full overflow-hidden">
+      <div className="flex-1 flex flex-col xl:h-full xl:overflow-hidden">
         <div className="p-4 md:p-6 border-b border-white/10 bg-slate-900/50 shrink-0">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-2">
             <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
