@@ -15,7 +15,7 @@ import Settings from './pages/Settings';
 import History from './pages/History';
 import Expenses from './pages/Expenses';
 import Profile from './pages/Profile';
-import SuperAdmin from './pages/SuperAdmin';
+import { SuperAdminDashboard } from './pages/SuperAdminDashboard';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -47,7 +47,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         
         {/* Ruta oculta para el Super Admin */}
-        <Route path="/master-panel" element={<SuperAdmin />} />
+        <Route path="/master-panel" element={<SuperAdminDashboard />} />
         
         {/* Rutas protegidas dentro del Layout */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
