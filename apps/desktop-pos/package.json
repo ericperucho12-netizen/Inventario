@@ -1,13 +1,30 @@
 {
   "name": "desktop-pos",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "PeruchOS Desktop Point of Sale",
+  "author": "PeruchOS",
   "type": "module",
   "main": "main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron:build": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.peruchos.pos",
+    "productName": "PeruchOS",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js"
+    ],
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@capacitor/android": "^8.5.2",
@@ -36,7 +53,8 @@
     "@vitejs/plugin-react": "^6.1.1",
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
-    "electron": "^44.4.1",
+    "electron": "44.4.1",
+    "electron-builder": "^25.1.8",
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
