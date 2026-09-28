@@ -10,11 +10,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Company } from '../companies/entities/company.entity.js';
 import { User } from '../users/entities/user.entity.js';
+import { Category } from '../categories/entities/category.entity.js';
 
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Company, User]),
+    TypeOrmModule.forFeature([Company, User, Category]),
     forwardRef(() => UsersModule),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({

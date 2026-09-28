@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { Company } from '../companies/entities/company.entity.js';
 import { Role } from '../users/enums/role.enum.js';
 import { User } from '../users/entities/user.entity.js';
+import { Category } from '../categories/entities/category.entity.js';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     private jwtService: JwtService,
     @InjectRepository(Company) private companyRepository: Repository<Company>,
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Category) private categoryRepository: Repository<Category>,
   ) {}
 
   async validateUser(username: string, pass: string): Promise<any> {
@@ -62,6 +64,15 @@ export class AuthService {
       role: Role.PROPIETARIO,
       companyId: company.id,
     });
+
+    // Crear categorías por defecto para la nueva empresa
+    const defaultCategories = ['Abarrotes', 'Bebidas', 'Botanas', 'Lácteos', 'Limpieza', 'Varios'];
+    for (const catName of defaultCategories) {
+      await this.categoryRepository.save({
+        name: catName,
+        companyId: company.id,
+      });
+    }
 
     return this.login(user);
   }

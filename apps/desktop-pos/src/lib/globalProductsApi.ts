@@ -34,7 +34,25 @@ export async function fetchProductInfo(barcode: string): Promise<GlobalProductIn
     console.error('Error fetching from Open Food Facts:', error);
   }
 
-  // 2. Si la API falla o no tiene el producto, usamos nuestra base local súper rápida como respaldo
+  // 2. Intentar con UPCitemdb (productos generales, electrónicos, ferretería, chinos)
+  try {
+    const res = await axios.get(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, {
+      timeout: 3000
+    });
+    
+    if (res.data && res.data.code === 'OK' && res.data.items && res.data.items.length > 0) {
+      const p = res.data.items[0];
+      return {
+        barcode,
+        description: p.title,
+        brand: p.brand
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching from UPCitemdb:', error);
+  }
+
+  // 3. Si las APIs fallan o no tienen el producto, usamos nuestra base local súper rápida como respaldo
   if (COMMON_PRODUCTS[barcode]) {
     return {
       barcode,
