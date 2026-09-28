@@ -9,6 +9,7 @@ interface User {
   isSubscribed?: boolean;
   subscriptionPlan?: string | null;
   nextBillingDate?: string | null;
+  securityQuestion?: string | null;
 }
 
 interface AuthState {

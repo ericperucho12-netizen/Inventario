@@ -22,6 +22,8 @@ export default function Profile() {
   const [email, setEmail] = useState(user?.username || ''); 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState(user?.securityQuestion || '');
+  const [securityAnswer, setSecurityAnswer] = useState(''); // Only update if provided
   const [isSavingUser, setIsSavingUser] = useState(false);
   
   // Custom Modals / Toasts
@@ -46,17 +48,24 @@ export default function Profile() {
       if (password) {
         updateData.passwordHash = password;
       }
+      if (securityQuestion) {
+        updateData.securityQuestion = securityQuestion;
+      }
+      if (securityAnswer) {
+        updateData.securityAnswer = securityAnswer;
+      }
 
       const res = await api.patch(`/users/${user?.id}`, updateData);
       
       const updatedUser = res.data;
       
       if (token) {
-        setAuth({ ...user, ...updatedUser }, token);
+        setAuth({ ...user, ...updatedUser, securityQuestion: updatedUser.securityQuestion }, token);
       }
       
       setPassword('');
       setConfirmPassword('');
+      setSecurityAnswer('');
       showNotification('Éxito', 'Tus datos han sido actualizados exitosamente.', 'success');
     } catch (error) {
       showNotification('Error', 'Hubo un error al guardar los datos.', 'error');
@@ -242,6 +251,36 @@ export default function Profile() {
                   />
                   <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECURITY QUESTION */}
+          <div className="mt-8 pt-6 border-t border-slate-800 space-y-4">
+            <h4 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" /> Recuperación de Contraseña
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Pregunta de Seguridad</label>
+                <input 
+                  type="text" 
+                  placeholder="Ej: Nombre de tu primera mascota"
+                  value={securityQuestion}
+                  onChange={e => setSecurityQuestion(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                />
+                <p className="text-xs text-slate-500 mt-1">Sirve para recuperar acceso si olvidas tu contraseña.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">Respuesta Secreta</label>
+                <input 
+                  type="password" 
+                  placeholder="Escribe para actualizarla..."
+                  value={securityAnswer}
+                  onChange={e => setSecurityAnswer(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-amber-500 transition-colors"
+                />
               </div>
             </div>
           </div>

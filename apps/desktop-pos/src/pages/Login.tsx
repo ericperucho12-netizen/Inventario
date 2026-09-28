@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCircle, KeyRound, Loader2, AlertCircle, ChevronRight, Fingerprint, Settings, Server } from 'lucide-react';
+import { UserCircle, KeyRound, Loader2, AlertCircle, ChevronRight, Fingerprint, Settings, Server, Check } from 'lucide-react';
 import { getApiUrl } from '../lib/axios';
 import { useAuthStore } from '../store/auth.store';
 import { api } from '../lib/axios';
@@ -15,6 +15,16 @@ export default function Login() {
   const [fullName, setFullName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [focusedInput, setFocusedInput] = useState<'username' | 'password' | 'fullName' | 'companyName' | null>(null);
+
+  // Recuperación de contraseña
+  const [showForgotPwd, setShowForgotPwd] = useState(false);
+  const [forgotStep, setForgotStep] = useState<1 | 2 | 3>(1);
+  const [forgotUsername, setForgotUsername] = useState('');
+  const [securityQuestion, setSecurityQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
   
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
@@ -53,6 +63,33 @@ export default function Login() {
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al conectar con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotNext = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError(null);
+    setLoading(true);
+
+    try {
+      if (forgotStep === 1) {
+        // Fetch question
+        const res = await api.get(`/auth/security-question?username=${forgotUsername}`);
+        setSecurityQuestion(res.data.question);
+        setForgotStep(2);
+      } else if (forgotStep === 2) {
+        // Enviar repuesta y nueva contra
+        await api.post('/auth/reset-password', {
+          username: forgotUsername,
+          securityAnswer,
+          newPassword
+        });
+        setForgotSuccess(true);
+      }
+    } catch (err: any) {
+      setForgotError(err.response?.data?.message || 'Error en la recuperación');
     } finally {
       setLoading(false);
     }
@@ -204,14 +241,24 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center space-y-3">
           <button
             type="button"
             onClick={() => setIsRegistering(!isRegistering)}
-            className="text-indigo-400 text-sm font-medium hover:text-indigo-300 transition-colors"
+            className="block w-full text-indigo-400 text-sm font-medium hover:text-indigo-300 transition-colors"
           >
             {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Registra tu empresa'}
           </button>
+          
+          {!isRegistering && (
+            <button
+              type="button"
+              onClick={() => { setShowForgotPwd(true); setForgotStep(1); setForgotUsername(''); setForgotError(null); setForgotSuccess(false); }}
+              className="block w-full text-slate-500 text-sm font-medium hover:text-slate-400 transition-colors"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
         </div>
 
         <div className="mt-8 flex justify-center">
@@ -273,6 +320,99 @@ export default function Login() {
           </div>
         </div>
       )}
+
+      {/* Forgot Password Modal */}
+      {showForgotPwd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-md">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <h3 className="text-lg font-bold text-white">Recuperar Contraseña</h3>
+            </div>
+
+            {forgotError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
+                {forgotError}
+              </div>
+            )}
+
+            {forgotSuccess ? (
+              <div className="text-center">
+                <div className="mx-auto w-12 h-12 bg-emerald-500/20 text-emerald-400 flex items-center justify-center rounded-full mb-4">
+                  <Check className="h-6 w-6" />
+                </div>
+                <h4 className="text-white font-bold mb-2">¡Contraseña Actualizada!</h4>
+                <p className="text-slate-400 text-sm mb-6">Ya puedes iniciar sesión con tu nueva contraseña.</p>
+                <button onClick={() => setShowForgotPwd(false)} className="w-full rounded-xl bg-indigo-500 py-3 text-sm font-bold text-white hover:bg-indigo-400">
+                  Volver al Login
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotNext}>
+                {forgotStep === 1 && (
+                  <div className="mb-6">
+                    <label className="mb-2 block text-sm font-medium text-slate-300">¿Cuál es tu usuario (email)?</label>
+                    <input 
+                      type="text"
+                      value={forgotUsername}
+                      onChange={(e) => setForgotUsername(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-white focus:border-amber-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+                )}
+
+                {forgotStep === 2 && (
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <p className="text-xs text-slate-400 mb-1">Pregunta de Seguridad:</p>
+                      <p className="font-medium text-white mb-2">{securityQuestion}</p>
+                      <input 
+                        type="text"
+                        placeholder="Tu respuesta..."
+                        value={securityAnswer}
+                        onChange={(e) => setSecurityAnswer(e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-white focus:border-amber-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-slate-300">Nueva Contraseña</label>
+                      <input 
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full rounded-xl border border-white/10 bg-black/20 p-3 text-white focus:border-amber-500 focus:outline-none"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button 
+                    type="button"
+                    onClick={() => setShowForgotPwd(false)}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 py-3 text-sm font-bold text-white hover:bg-white/10"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white hover:bg-amber-400 disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : (forgotStep === 1 ? 'Siguiente' : 'Restablecer')}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Custom Tailwind animation class needed for shimmer */}
       <style>{`
         @keyframes shimmer {

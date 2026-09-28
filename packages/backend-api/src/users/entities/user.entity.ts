@@ -43,6 +43,13 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   nextBillingDate: Date;
 
+  // Campos de recuperación
+  @Column({ type: 'varchar', nullable: true })
+  securityQuestion: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  securityAnswer: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

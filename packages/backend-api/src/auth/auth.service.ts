@@ -1,6 +1,6 @@
 import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { UsersService } from '../users/users.service.js';
 import * as bcrypt from 'bcrypt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -82,5 +82,34 @@ export class AuthService {
     }
 
     return this.login(user);
+  }
+
+  async getSecurityQuestion(username: string) {
+    const user = await this.usersService.findByUsername(username);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (!user.securityQuestion) throw new BadRequestException('Este usuario no tiene configurada una pregunta de seguridad.');
+    return { question: user.securityQuestion };
+  }
+
+  async resetPassword(data: any) {
+    const user = await this.usersService.findByUsername(data.username);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (!user.securityAnswer) throw new BadRequestException('El usuario no tiene respuesta de seguridad configurada.');
+    
+    // Validar respuesta (case insensitive, trim whitespace)
+    const storedAnswer = user.securityAnswer.toLowerCase().trim();
+    const providedAnswer = data.securityAnswer.toLowerCase().trim();
+    
+    if (storedAnswer !== providedAnswer) {
+      throw new UnauthorizedException('Respuesta incorrecta');
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(data.newPassword, salt);
+    
+    user.passwordHash = hash;
+    await this.userRepository.save(user);
+
+    return { message: 'Contraseña actualizada correctamente' };
   }
 }
