@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSettingsStore } from '../store/settings.store';
+import { useOfflineStore } from '../store/offline.store';
 import { fetchProductInfo } from '../lib/globalProductsApi';
 import { FastAddModal } from '../components/FastAddModal';
 import { CameraScanner } from '../components/CameraScanner';
@@ -47,6 +48,7 @@ export default function Purchases() {
   const barcodeBuffer = useRef('');
   const lastKeyTime = useRef(Date.now());
   const location = useLocation();
+  const { cachedProducts, setCachedProducts, addPendingPurchase } = useOfflineStore();
   
   // Imprimir Ticket de Entrada
   const [showTicket, setShowTicket] = useState(false);
@@ -77,7 +79,16 @@ export default function Purchases() {
   }, [location.state, products]);
 
   const fetchProducts = () => {
-    api.get('/products').then(res => setProducts(res.data)).catch(console.error);
+    if (!navigator.onLine && cachedProducts.length > 0) {
+      setProducts(cachedProducts);
+      return;
+    }
+    api.get('/products').then(res => {
+      setProducts(res.data);
+      setCachedProducts(res.data);
+    }).catch(e => {
+      if (cachedProducts.length > 0) setProducts(cachedProducts);
+    });
   };
 
   const fetchSuppliers = () => {
@@ -265,14 +276,28 @@ export default function Purchases() {
         items 
       };
 
-      const response = await api.post('/purchases', payload);
+      let responseId = '';
+      if (!navigator.onLine) {
+        responseId = 'OFFLINE-PURCHASE-' + Date.now();
+        addPendingPurchase({
+          id: responseId,
+          supplierId: payload.supplierId,
+          items: payload.items,
+          total: subtotal,
+          date: new Date().toISOString()
+        });
+      } else {
+        const response = await api.post('/purchases', payload);
+        responseId = response.data.id;
+      }
+
       const supplier = suppliers.find(s => s.id === selectedSupplierId);
       
       setTicketData({
         items: [...cart],
         total: subtotal,
         date: new Date(),
-        id: response.data.id,
+        id: responseId,
         supplierName: supplier?.name
       });
       

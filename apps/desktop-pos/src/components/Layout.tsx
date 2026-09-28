@@ -14,7 +14,7 @@ export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
-  const { pendingSales, clearPendingSales } = useOfflineStore();
+  const { pendingSales, clearPendingSales, pendingPurchases, clearPendingPurchases } = useOfflineStore();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -31,7 +31,7 @@ export default function Layout() {
     window.addEventListener('offline', handleOffline);
 
     // Initial check
-    if (navigator.onLine && pendingSales.length > 0) {
+    if (navigator.onLine && (pendingSales.length > 0 || pendingPurchases.length > 0)) {
       syncOfflineData();
     }
 
@@ -39,10 +39,10 @@ export default function Layout() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [pendingSales]);
+  }, [pendingSales, pendingPurchases]);
 
   const syncOfflineData = async () => {
-    if (pendingSales.length === 0) return;
+    if (pendingSales.length === 0 && pendingPurchases.length === 0) return;
     setIsSyncing(true);
     try {
       for (const sale of pendingSales) {
@@ -55,6 +55,16 @@ export default function Layout() {
         });
       }
       clearPendingSales();
+
+      for (const purchase of pendingPurchases) {
+        // Enviar cada compra pendiente
+        await api.post('/purchases', {
+          supplierId: purchase.supplierId,
+          items: purchase.items
+        });
+      }
+      clearPendingPurchases();
+
       console.log('Sincronización completada exitosamente');
     } catch (error) {
       console.error('Error sincronizando datos offline:', error);
@@ -83,13 +93,13 @@ export default function Layout() {
           <div className="flex items-center gap-2 text-xs text-amber-500 font-bold ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
             <WifiOff className="h-3 w-3" />
             Sin Conexión (Modo Offline activo)
-            {pendingSales.length > 0 && ` - ${pendingSales.length} venta(s) pendiente(s)`}
+            {(pendingSales.length > 0 || pendingPurchases.length > 0) && ` - ${pendingSales.length} venta(s), ${pendingPurchases.length} compra(s)`}
           </div>
         )}
         {isSyncing && (
           <div className="flex items-center gap-2 text-xs text-blue-400 font-bold ml-auto" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
             <Loader2 className="h-3 w-3 animate-spin" />
-            Sincronizando {pendingSales.length} venta(s)...
+            Sincronizando {pendingSales.length + pendingPurchases.length} registros...
           </div>
         )}
       </div>
