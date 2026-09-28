@@ -163,6 +163,17 @@ export default function Catalog() {
     }
   };
 
+  const handleDeleteCategory = async (id: string, name: string) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la categoría: ${name}?`)) {
+      try {
+        await api.delete(`/categories/${id}`);
+        fetchData(); // Refresh the list
+      } catch (error) {
+        alert('Error al eliminar la categoría. Asegúrate de que no tenga productos asociados.');
+      }
+    }
+  };
+
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
@@ -175,7 +186,7 @@ export default function Catalog() {
   );
 
   return (
-    <div className="p-8">
+    <div className="p-8 h-full overflow-y-auto">
       <header className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold">Catálogo</h1>
@@ -267,6 +278,7 @@ export default function Catalog() {
                 <tr>
                   <th className="px-6 py-4 font-medium">Nombre</th>
                   <th className="px-6 py-4 font-medium">Descripción</th>
+                  <th className="px-6 py-4 font-medium text-right">Acciones</th>
                 </tr>
               )}
             </thead>
@@ -314,6 +326,14 @@ export default function Catalog() {
                 <tr key={cat.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 font-medium">{cat.name}</td>
                   <td className="px-6 py-4 text-slate-400">{cat.description}</td>
+                  <td className="px-6 py-4 text-right">
+                    <button 
+                      onClick={() => handleDeleteCategory(cat.id, cat.name)}
+                      className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
