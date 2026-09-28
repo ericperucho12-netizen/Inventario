@@ -11,7 +11,10 @@ export default function Login() {
   const [keepSession, setKeepSession] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [focusedInput, setFocusedInput] = useState<'username' | 'password' | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [focusedInput, setFocusedInput] = useState<'username' | 'password' | 'fullName' | 'companyName' | null>(null);
   
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
@@ -39,9 +42,15 @@ export default function Login() {
     localStorage.setItem('peruchos-keep-session', keepSession ? 'true' : 'false');
     
     try {
-      const response = await api.post('/auth/login', { username, password });
-      setAuth(response.data.user, response.data.access_token);
-      navigate('/dashboard');
+      if (isRegistering) {
+        const response = await api.post('/auth/register', { username, password, fullName, companyName });
+        setAuth(response.data.user, response.data.access_token);
+        navigate('/dashboard');
+      } else {
+        const response = await api.post('/auth/login', { username, password });
+        setAuth(response.data.user, response.data.access_token);
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error al conectar con el servidor');
     } finally {
@@ -61,7 +70,7 @@ export default function Login() {
         {/* Greeting */}
         <div className="mb-10 flex flex-col items-center text-center">
           <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-tr from-indigo-400 to-violet-400 bg-clip-text text-transparent mb-2">PeruchOS</h1>
-          <p className="text-base text-slate-400">Ingresa a tu cuenta para continuar</p>
+          <p className="text-base text-slate-400">{isRegistering ? 'Crea una nueva cuenta para tu negocio' : 'Ingresa a tu cuenta para continuar'}</p>
         </div>
 
         {error && (
@@ -90,11 +99,52 @@ export default function Login() {
                   onFocus={() => setFocusedInput('username')}
                   onBlur={() => setFocusedInput(null)}
                   className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
-                  placeholder="Usuario"
+                  placeholder="Usuario (email)"
                   required
                 />
               </div>
             </div>
+
+            {isRegistering && (
+              <>
+                <div className="h-[1px] w-full bg-white/5 ml-12"></div>
+                <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'fullName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                    <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <input 
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      onFocus={() => setFocusedInput('fullName')}
+                      onBlur={() => setFocusedInput(null)}
+                      className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="Nombre Completo"
+                      required={isRegistering}
+                    />
+                  </div>
+                </div>
+                <div className="h-[1px] w-full bg-white/5 ml-12"></div>
+                <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'companyName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                    <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                  </div>
+                  <div className="flex-1">
+                    <input 
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      onFocus={() => setFocusedInput('companyName')}
+                      onBlur={() => setFocusedInput(null)}
+                      className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
+                      placeholder="Nombre de tu Negocio/Empresa"
+                      required={isRegistering}
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="h-[1px] w-full bg-white/5 ml-12"></div>
 
@@ -147,12 +197,22 @@ export default function Login() {
             ) : (
               <>
                 <Fingerprint className="h-5 w-5 opacity-80" />
-                <span>Ingresar</span>
+                <span>{isRegistering ? 'Crear Cuenta' : 'Ingresar'}</span>
                 <ChevronRight className="h-5 w-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </>
             )}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={() => setIsRegistering(!isRegistering)}
+            className="text-indigo-400 text-sm font-medium hover:text-indigo-300 transition-colors"
+          >
+            {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Registra tu empresa'}
+          </button>
+        </div>
 
         <div className="mt-8 flex justify-center">
           <button 
