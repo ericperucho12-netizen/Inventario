@@ -423,7 +423,7 @@ export default function Pos() {
           </div>
         </div>
         
-        <div className="flex-1 overflow-visible xl:overflow-y-auto pr-2 custom-scrollbar pb-4">
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {filteredProducts.map(product => (
               <button 
@@ -472,7 +472,7 @@ export default function Pos() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-visible xl:overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
               <ShoppingCart className="h-12 w-12 opacity-20" />
