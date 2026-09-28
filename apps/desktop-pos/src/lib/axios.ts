@@ -8,7 +8,7 @@ export const getApiUrl = () => {
     return window.location.origin + '/api';
   }
 
-  let url = localStorage.getItem('peruchos-api-url') || 'https://inventario-y02z.onrender.com';
+  let url = localStorage.getItem('peruchos-api-url') || 'https://peruchos-backend.onrender.com';
   url = url.replace(/\/$/, ''); // Quitar slash final si existe
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
     url = 'https://' + url;
