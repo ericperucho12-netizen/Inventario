@@ -2,6 +2,15 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import type { Category } from '../../categories/entities/category.entity.js';
 import { Company } from '../../companies/entities/company.entity.js';
 
+export class ColumnNumericTransformer {
+  to(data: number): number {
+    return data;
+  }
+  from(data: string): number {
+    return parseFloat(data);
+  }
+}
+
 @Entity('products')
 @Unique(['companyId', 'barcode'])
 export class Product {
@@ -21,16 +30,16 @@ export class Product {
   @Column()
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, transformer: new ColumnNumericTransformer() })
   costPrice: number;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0, transformer: new ColumnNumericTransformer() })
   sellingPrice: number;
 
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ type: 'decimal', precision: 10, scale: 3, default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 3, default: 0, transformer: new ColumnNumericTransformer() })
   stock: number;
 
   @Column({ default: false })
