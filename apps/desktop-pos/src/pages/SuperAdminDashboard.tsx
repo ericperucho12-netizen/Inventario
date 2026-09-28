@@ -37,6 +37,18 @@ export const SuperAdminDashboard = () => {
     }
   };
 
+  const approveSubscription = async (id: string) => {
+    if (!window.confirm('¿Seguro que deseas registrar un pago manual (1 mes extra) para esta empresa?')) return;
+    try {
+      await api.patch(`/superadmin/companies/${id}/approve-subscription`);
+      alert('Pago registrado correctamente. La empresa tiene 1 mes más de acceso.');
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      alert('Error al aprobar suscripción');
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500">Cargando panel maestro...</div>;
 
   return (
@@ -65,10 +77,17 @@ export const SuperAdminDashboard = () => {
                       {c.isActive ? 'Activa' : 'Suspendida'}
                     </span>
                   </td>
-                  <td className="p-4 text-right">
+                  <td className="p-4 text-right flex justify-end gap-2">
+                    <button
+                      onClick={() => approveSubscription(c.id)}
+                      className="text-sm font-bold px-3 py-2 rounded-lg transition-colors border bg-indigo-600/20 text-indigo-400 hover:text-white hover:bg-indigo-600 border-indigo-600/30"
+                      title="Aprobar pago en efectivo por 1 mes"
+                    >
+                      Aprobar Mes
+                    </button>
                     <button
                       onClick={() => toggleStatus(c.id, c.isActive)}
-                      className={`text-sm font-bold px-4 py-2 rounded-lg transition-colors border ${c.isActive ? 'bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 border-red-600/30' : 'bg-emerald-600/20 text-emerald-400 hover:text-white hover:bg-emerald-600 border-emerald-600/30'}`}
+                      className={`text-sm font-bold px-3 py-2 rounded-lg transition-colors border ${c.isActive ? 'bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 border-red-600/30' : 'bg-emerald-600/20 text-emerald-400 hover:text-white hover:bg-emerald-600 border-emerald-600/30'}`}
                     >
                       {c.isActive ? 'Suspender' : 'Reactivar'}
                     </button>
