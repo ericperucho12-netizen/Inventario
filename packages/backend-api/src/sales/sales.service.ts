@@ -11,14 +11,14 @@ import { Customer } from '../customers/entities/customer.entity.js';
 export class SalesService {
   constructor(private dataSource: DataSource) {}
 
-  async create(createSaleDto: CreateSaleDto, userId: string) {
+  async create(createSaleDto: CreateSaleDto, userId: string, companyId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       // Validar si hay turno abierto
-      const cashShift = await queryRunner.manager.findOne(CashShift, { where: { status: 'OPEN' } });
+      const cashShift = await queryRunner.manager.findOne(CashShift, { where: { status: 'OPEN', companyId } });
       if (!cashShift) {
         throw new BadRequestException('No se puede cobrar la venta porque no hay una caja abierta. Inicia el turno en el Dashboard.');
       }
@@ -29,7 +29,7 @@ export class SalesService {
       // Validar stock de cada producto
       for (const item of createSaleDto.items) {
         const product = await queryRunner.manager.findOne(Product, { 
-          where: { id: item.productId }
+          where: { id: item.productId, companyId }
         });
 
         if (!product) {
@@ -58,14 +58,16 @@ export class SalesService {
       }
 
       const sale = new Sale();
+      sale.companyId = companyId;
       sale.total = total;
       sale.details = saleDetails;
       sale.userId = userId;
       sale.cashShiftId = cashShift.id;
       sale.isCredit = !!createSaleDto.isCredit;
+      sale.paymentMethod = createSaleDto.paymentMethod || 'CASH';
 
       if (createSaleDto.isCredit && createSaleDto.customerId) {
-        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId } });
+        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId, companyId } });
         if (!customer) {
           throw new BadRequestException('Cliente no encontrado para la venta a crédito');
         }
@@ -73,7 +75,7 @@ export class SalesService {
         customer.debt = Number(customer.debt) + total;
         await queryRunner.manager.save(customer);
       } else if (createSaleDto.customerId) {
-        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId } });
+        const customer = await queryRunner.manager.findOne(Customer, { where: { id: createSaleDto.customerId, companyId } });
         if (customer) {
           sale.customer = customer;
         }
@@ -92,8 +94,8 @@ export class SalesService {
     }
   }
 
-  findAll(days?: number) {
-    const where: any = {};
+  findAll(companyId: string, days?: number) {
+    const where: any = { companyId };
     if (days) {
       const date = new Date();
       date.setDate(date.getDate() - days);
@@ -107,21 +109,21 @@ export class SalesService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, companyId: string) {
     return this.dataSource.manager.findOne(Sale, {
-      where: { id },
+      where: { id, companyId },
       relations: ['details', 'details.product', 'customer']
     });
   }
 
-  async refund(id: string) {
+  async refund(id: string, companyId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       const sale = await queryRunner.manager.findOne(Sale, {
-        where: { id },
+        where: { id, companyId },
         relations: ['details', 'details.product', 'customer']
       });
 

@@ -3,12 +3,14 @@ import { DataSource } from 'typeorm';
 import { Sale } from '../sales/entities/sale.entity.js';
 import { Customer } from '../customers/entities/customer.entity.js';
 import { Product } from '../products/entities/product.entity.js';
+import { Purchase } from '../purchases/entities/purchase.entity.js';
+import { Expense } from '../expenses/entities/expense.entity.js';
 
 @Injectable()
 export class DashboardService {
   constructor(private dataSource: DataSource) {}
 
-  async getSummary() {
+  async getSummary(period: string = 'week') {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -28,8 +30,30 @@ export class DashboardService {
       .where('sale.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
       .getRawOne();
 
+    // Purchases this month (Inversión/Gastos)
+    const purchasesMonthResult = await this.dataSource.manager
+      .createQueryBuilder(Purchase, 'purchase')
+      .select('SUM(purchase.total)', 'total')
+      .where('purchase.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
+      .getRawOne();
+
+    // Expenses this month
+    const expensesMonthResult = await this.dataSource.manager
+      .createQueryBuilder(Expense, 'expense')
+      .select('SUM(expense.amount)', 'total')
+      .where('expense.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
+      .getRawOne();
+
+    // Profit this month (Utilidades)
+    const profitMonthResult = await this.dataSource.manager.query(`
+      SELECT SUM((sd."unitPrice" - sd."unitCost") * sd.quantity) as "totalProfit"
+      FROM sale_details sd
+      JOIN sales s ON s.id = sd."saleId"
+      WHERE s."createdAt" >= $1
+    `, [firstDayOfMonth.toISOString()]);
+
     // Total Customers
-    const totalCustomers = await this.dataSource.manager.count(Customer);
+    const totalCustomers = await this.dataSource.manager.count(Customer, { where: { isActive: true } });
 
     // Low stock products (<= 5)
     const lowStockProducts = await this.dataSource.manager
@@ -38,35 +62,78 @@ export class DashboardService {
       .andWhere('product.isActive = :active', { active: true })
       .getCount();
 
-    // Last 7 days sales chart data
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(today.getDate() - 6);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
+    // Accounts Receivable (Total Debt from customers)
+    const debtResult = await this.dataSource.manager
+      .createQueryBuilder(Customer, 'customer')
+      .select('SUM(customer.debt)', 'total')
+      .where('customer.isActive = :active', { active: true })
+      .getRawOne();
 
-    const chartDataResult = await this.dataSource.manager
+    // Inventory Value
+    const inventoryResult = await this.dataSource.manager
+      .createQueryBuilder(Product, 'product')
+      .select('SUM(product.stock * product."costPrice")', 'total')
+      .where('product.isActive = :active', { active: true })
+      .andWhere('product.stock > 0')
+      .getRawOne();
+
+    // Chart data handling based on period
+    let numDays = 7;
+    if (period === 'month') numDays = 30;
+    
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - (numDays - 1));
+    startDate.setHours(0, 0, 0, 0);
+
+    // Fetch raw data to handle timezones in JavaScript properly
+    const recentSalesChart = await this.dataSource.manager
       .createQueryBuilder(Sale, 'sale')
-      .select('date(sale.createdAt)', 'date')
-      .addSelect('SUM(sale.total)', 'total')
-      .where('sale.createdAt >= :date', { date: sevenDaysAgo.toISOString() })
-      .groupBy('date(sale.createdAt)')
-      .orderBy('date', 'ASC')
-      .getRawMany();
+      .where('sale.createdAt >= :date', { date: startDate.toISOString() })
+      .getMany();
 
-    // Fill missing days with 0
+    const recentPurchasesChart = await this.dataSource.manager
+      .createQueryBuilder(Purchase, 'purchase')
+      .where('purchase.createdAt >= :date', { date: startDate.toISOString() })
+      .getMany();
+
+    const recentExpensesChart = await this.dataSource.manager
+      .createQueryBuilder(Expense, 'expense')
+      .where('expense.createdAt >= :date', { date: startDate.toISOString() })
+      .getMany();
+
+    // Helper to get local date string YYYY-MM-DD
+    const getLocalDateString = (d: Date) => {
+      const date = new Date(d);
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    // Fill missing days with 0 and calculate totals
     const chartData = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(sevenDaysAgo);
+    for (let i = 0; i < numDays; i++) {
+      const d = new Date(startDate);
       d.setDate(d.getDate() + i);
-      const dateStr = d.toISOString().split('T')[0];
-      const found = chartDataResult.find(item => item.date === dateStr);
+      const dateStr = getLocalDateString(d);
+      
+      const daySales = recentSalesChart.filter(s => getLocalDateString(s.createdAt) === dateStr);
+      const dayPurchases = recentPurchasesChart.filter(p => getLocalDateString(p.createdAt) === dateStr);
+      const dayExpenses = recentExpensesChart.filter(e => getLocalDateString(e.createdAt) === dateStr);
+
+      const totalVentas = daySales.reduce((acc, curr) => acc + Number(curr.total), 0);
+      const totalCompras = dayPurchases.reduce((acc, curr) => acc + Number(curr.total), 0);
+      const totalGastos = dayExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
       
       // Formatear el día en español para la UI
-      const dayName = d.toLocaleDateString('es-MX', { weekday: 'short' });
+      const dayName = d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: numDays > 7 ? 'short' : undefined });
 
       chartData.push({
         date: dateStr,
         name: dayName.charAt(0).toUpperCase() + dayName.slice(1),
-        total: found ? parseFloat(found.total) : 0
+        ventas: totalVentas,
+        compras: totalCompras,
+        gastos: totalGastos
       });
     }
 
@@ -77,13 +144,37 @@ export class DashboardService {
       take: 5
     });
 
+    // Top Selling Products (Lifetime or Month? User asked for filters, let's just do top products for now, maybe all-time or last 30 days)
+    // We'll calculate profit as (unitPrice - unitCost) * quantity
+    const topProducts = await this.dataSource.manager.query(`
+      SELECT 
+        p.description as name, 
+        SUM(sd.quantity) as "totalSold", 
+        SUM((sd."unitPrice" - sd."unitCost") * sd.quantity) as profit 
+      FROM sale_details sd
+      JOIN products p ON p.id = sd."productId"
+      GROUP BY p.id, p.description
+      ORDER BY "totalSold" DESC
+      LIMIT 5
+    `);
+
     return {
       todayTotal: parseFloat(salesTodayResult?.total || 0),
       monthTotal: parseFloat(salesMonthResult?.total || 0),
+      monthPurchases: parseFloat(purchasesMonthResult?.total || 0),
+      monthExpenses: parseFloat(expensesMonthResult?.total || 0),
+      monthProfit: parseFloat(profitMonthResult?.[0]?.totalProfit || 0),
       totalCustomers,
       lowStockProducts,
+      accountsReceivable: parseFloat(debtResult?.total || 0),
+      inventoryValue: parseFloat(inventoryResult?.total || 0),
       chartData,
-      recentSales
+      recentSales,
+      topProducts: topProducts.map((p: any) => ({
+        name: p.name,
+        totalSold: Number(p.totalSold),
+        profit: Number(p.profit)
+      }))
     };
   }
 }

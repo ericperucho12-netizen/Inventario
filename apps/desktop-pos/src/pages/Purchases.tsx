@@ -2,9 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/axios';
 import { 
   Search, Plus, Minus, Trash2, ShoppingCart, 
-  Barcode, Loader2, DollarSign, Building2, TrendingUp
+  Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer
 } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useSettingsStore } from '../store/settings.store';
+import { fetchProductInfo } from '../lib/globalProductsApi';
+import { FastAddModal } from '../components/FastAddModal';
+import { CameraScanner } from '../components/CameraScanner';
 
 interface Product {
   id: string;
@@ -13,7 +17,7 @@ interface Product {
   sellingPrice: number;
   costPrice: number;
   stock: number;
-  category?: { name: string };
+  category?: { id: string; name: string };
 }
 
 interface Supplier {
@@ -41,16 +45,35 @@ export default function Purchases() {
   const { scannerEnabled, defaultPrinter } = useSettingsStore();
   const barcodeBuffer = useRef('');
   const lastKeyTime = useRef(Date.now());
+  const location = useLocation();
   
   // Imprimir Ticket de Entrada
   const [showTicket, setShowTicket] = useState(false);
   const [ticketData, setTicketData] = useState<any>(null);
   const ticketRef = useRef<HTMLDivElement>(null);
+  
+  // Fast Add States
+  const [showFastAdd, setShowFastAdd] = useState(false);
+  const [isFetchingGlobal, setIsFetchingGlobal] = useState(false);
+  const [fastAddData, setFastAddData] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [filterCategoryId, setFilterCategoryId] = useState('');
+  
+  // Camera Scanner state
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
 
   useEffect(() => {
     fetchProducts();
     fetchSuppliers();
+    fetchCategories();
   }, []);
+
+  useEffect(() => {
+    if (products.length > 0 && location.state?.scannedCode) {
+      handleBarcodeScan(location.state.scannedCode);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, products]);
 
   const fetchProducts = () => {
     api.get('/products').then(res => setProducts(res.data)).catch(console.error);
@@ -58,6 +81,37 @@ export default function Purchases() {
 
   const fetchSuppliers = () => {
     api.get('/suppliers').then(res => setSuppliers(res.data)).catch(console.error);
+  };
+
+  const fetchCategories = () => {
+    api.get('/categories').then(res => setCategories(res.data)).catch(console.error);
+  };
+
+  const handleBarcodeScan = async (scannedCode: string) => {
+    const product = products.find(p => p.barcode === scannedCode);
+    if (product) {
+      addToCart(product);
+      setSearch('');
+    } else {
+      setIsFetchingGlobal(true);
+      try {
+        const info = await fetchProductInfo(scannedCode);
+        setFastAddData({
+          barcode: scannedCode,
+          description: info?.description || '',
+          sellingPrice: '',
+          costPrice: '',
+          stock: '1',
+          categoryId: '',
+          imageUrl: info?.imageUrl || null
+        });
+        setShowFastAdd(true);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsFetchingGlobal(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -77,10 +131,7 @@ export default function Purchases() {
         if (barcodeBuffer.current.length > 0) {
           const scannedCode = barcodeBuffer.current;
           barcodeBuffer.current = '';
-          const product = products.find(p => p.barcode === scannedCode);
-          if (product) {
-            addToCart(product);
-          }
+          handleBarcodeScan(scannedCode);
         }
       } else if (e.key.length === 1) {
         barcodeBuffer.current += e.key;
@@ -119,6 +170,15 @@ export default function Purchases() {
     }));
   };
 
+  const setAbsoluteQuantity = (productId: string, quantity: number) => {
+    setCart(prev => prev.map(item => {
+      if (item.product.id === productId) {
+        return { ...item, quantity: Math.max(0, quantity) };
+      }
+      return item;
+    }));
+  };
+
   const updateCost = (productId: string, cost: number) => {
     setCart(prev => prev.map(item => 
       item.product.id === productId ? { ...item, unitCost: Math.max(0, cost) } : item
@@ -135,22 +195,71 @@ export default function Purchases() {
     setCart(prev => prev.filter(item => item.product.id !== productId));
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.unitCost * item.quantity), 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item.unitCost * (item.quantity || 1)), 0);
+
+  const handleFastAddSuccess = async (newProduct: Product, initialStock: number, supplierId?: string) => {
+    setProducts(prev => [...prev, newProduct]);
+    setShowFastAdd(false);
+    setFastAddData(null);
+    setSearch('');
+    
+    if (initialStock > 0) {
+      try {
+        setIsProcessing(true);
+        const payload = {
+          supplierId: supplierId || undefined,
+          items: [{
+            productId: newProduct.id,
+            quantity: initialStock,
+            unitCost: newProduct.costPrice || 0,
+            newSellingPrice: newProduct.sellingPrice || 0
+          }]
+        };
+        const response = await api.post('/purchases', payload);
+        
+        setTicketData({
+          items: [{
+            product: newProduct,
+            quantity: initialStock,
+            unitCost: newProduct.costPrice || 0,
+            newSellingPrice: newProduct.sellingPrice || 0
+          }],
+          total: (newProduct.costPrice || 0) * initialStock,
+          date: new Date(),
+          id: response.data.id,
+          supplierName: supplierId ? suppliers.find(s => s.id === supplierId)?.name : 'Inventario Inicial'
+        });
+        setShowTicket(true);
+        
+        fetchProducts(); // Refrescar inventario con el nuevo stock
+        setToastMessage('Producto dado de alta con inventario inicial');
+        setTimeout(() => setToastMessage(null), 3000);
+      } catch (error) {
+        console.error('Error procesando compra inicial:', error);
+        alert('El producto se guardó, pero hubo un error registrando el stock inicial.');
+      } finally {
+        setIsProcessing(false);
+      }
+    } else {
+      setToastMessage('Producto dado de alta sin stock');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
 
   const processPurchase = async () => {
-    if (cart.length === 0 || !selectedSupplierId) return;
+    if (cart.length === 0) return;
     
     setIsProcessing(true);
     try {
       const items = cart.map(item => ({
         productId: item.product.id,
-        quantity: item.quantity,
+        quantity: item.quantity || 1,
         unitCost: item.unitCost,
         newSellingPrice: item.newSellingPrice
       }));
 
       const payload = { 
-        supplierId: selectedSupplierId,
+        supplierId: selectedSupplierId || undefined,
         items 
       };
 
@@ -221,40 +330,111 @@ export default function Purchases() {
     setShowTicket(false);
   };
 
-  const filteredProducts = products.filter(p => 
-    p.description.toLowerCase().includes(search.toLowerCase()) || 
-    p.barcode.includes(search)
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.description.toLowerCase().includes(search.toLowerCase()) || 
+                          p.barcode.includes(search);
+    const matchesCategory = filterCategoryId ? p.category?.id === filterCategoryId : true;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="flex h-full bg-slate-950 text-white relative">
+    <div className="flex flex-col xl:flex-row min-h-screen xl:h-full bg-slate-950 text-white relative">
+      {/* Global Fetch Loading Overlay */}
+      {isFetchingGlobal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 text-blue-500 animate-spin mb-4" />
+          <p className="text-white font-medium">Buscando producto en base de datos global...</p>
+        </div>
+      )}
+
+      {/* Fast Add Modal */}
+      {showFastAdd && fastAddData && (
+        <FastAddModal 
+          fastAddData={fastAddData}
+          setFastAddData={setFastAddData}
+          categories={categories}
+          suppliers={suppliers}
+          onClose={() => setShowFastAdd(false)}
+          onSuccess={handleFastAddSuccess}
+        />
+      )}
+
+      {/* Camera Scanner Modal */}
+      {showCameraScanner && (
+        <CameraScanner 
+          onScan={(decodedText) => {
+            setShowCameraScanner(false);
+            handleBarcodeScan(decodedText);
+          }}
+          onClose={() => setShowCameraScanner(false)}
+        />
+      )}
+
       {/* Lado Izquierdo: Buscador y Catálogo */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="p-6 border-b border-white/10 bg-slate-900/50">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <ShoppingCart className="h-8 w-8 text-blue-500" />
-              Ingresar Compra (Proveedor)
+      <div className="flex-1 flex flex-col xl:h-full overflow-hidden">
+        <div className="p-4 md:p-6 border-b border-white/10 bg-slate-900/50 shrink-0">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-2">
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+              <ShoppingCart className="h-6 w-6 md:h-8 md:w-8 text-blue-500" />
+              Ingresar Compra
             </h1>
             <div className="flex items-center gap-2 bg-blue-500/10 text-blue-400 px-4 py-2 rounded-lg font-medium border border-blue-500/20">
               <Barcode className="h-5 w-5" />
               {scannerEnabled ? 'Escáner Activo' : 'Escáner Desactivado'}
             </div>
           </div>
-          <div className="relative max-w-2xl">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar producto por código o descripción..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
-            />
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar producto por código o descripción..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && search.trim().length > 0) {
+                    handleBarcodeScan(search.trim());
+                  }
+                }}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-12 pr-12 text-white focus:outline-none focus:border-blue-500 transition-colors shadow-inner"
+              />
+              <button 
+                onClick={() => setShowCameraScanner(true)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded-lg transition-colors"
+                title="Escanear con Cámara"
+              >
+                <Barcode className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex gap-3 md:gap-4">
+              <div className="relative flex-1 md:w-48 shrink-0">
+                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <select
+                  value={filterCategoryId}
+                  onChange={(e) => setFilterCategoryId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-slate-300 focus:outline-none focus:border-blue-500 transition-colors appearance-none"
+                >
+                  <option value="">Todas las Categorías</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <Link 
+                to="/suppliers"
+                className="flex items-center gap-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30 px-4 py-3 font-medium hover:bg-indigo-500 hover:text-white transition-colors shrink-0"
+                title="Ir a Proveedores"
+              >
+                <Building2 className="h-5 w-5" />
+                <span className="hidden md:inline">Proveedores</span>
+              </Link>
+            </div>
           </div>
         </div>
 
-        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar bg-slate-950">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div className="flex-1 p-4 md:p-6 overflow-y-visible xl:overflow-y-auto custom-scrollbar bg-slate-950">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4">
             {filteredProducts.map(product => (
               <button
                 key={product.id}
@@ -277,9 +457,9 @@ export default function Purchases() {
       </div>
 
       {/* Lado Derecho: Carrito de Compra */}
-      <div className="w-[450px] border-l border-white/10 bg-slate-900/50 flex flex-col h-full shadow-2xl z-10">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-bold flex items-center gap-2">
+      <div className="w-full xl:w-[450px] border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col xl:h-full shadow-2xl z-10 shrink-0">
+        <div className="p-4 md:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+          <h2 className="text-lg md:text-xl font-bold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-blue-400" />
             Mercancía Recibida
           </h2>
@@ -288,7 +468,7 @@ export default function Purchases() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-visible xl:overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
               <ShoppingCart className="h-12 w-12 opacity-20" />
@@ -320,32 +500,62 @@ export default function Purchases() {
                   {/* Cantidad */}
                   <div>
                     <label className="text-xs text-slate-400 mb-1 block">Cantidad que llegó</label>
-                    <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-lg p-1">
-                      <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+                    <div className="flex items-center gap-1 bg-slate-950 border border-slate-700 rounded-lg p-1">
+                      <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0">
                         <Minus className="h-3 w-3" />
                       </button>
-                      <span className="font-semibold text-sm w-8 text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300">
+                      <input 
+                        type="number"
+                        min="1"
+                        value={item.quantity || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setAbsoluteQuantity(item.product.id, val === '' ? 0 : parseInt(val));
+                        }}
+                        onBlur={() => {
+                          if (!item.quantity) setAbsoluteQuantity(item.product.id, 1);
+                        }}
+                        className="w-full bg-transparent font-semibold text-sm text-center text-white focus:outline-none"
+                      />
+                      <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0">
                         <Plus className="h-3 w-3" />
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Precio de Venta (Opcional Actualizar) */}
-                <div className="border-t border-white/10 pt-3">
-                  <label className="text-xs text-slate-400 mb-1 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3 text-emerald-400" /> 
-                    Actualizar Precio de Venta (Opcional)
-                  </label>
-                  <input 
-                    type="number" 
-                    min="0"
-                    step="0.01"
-                    value={item.newSellingPrice}
-                    onChange={(e) => updateSellingPrice(item.product.id, parseFloat(e.target.value) || 0)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-sm text-emerald-400 font-bold focus:outline-none focus:border-emerald-500"
-                  />
+                {/* Precio de Venta y Margen */}
+                <div className="border-t border-white/10 pt-3 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3 text-indigo-400" /> 
+                      Margen (%)
+                    </label>
+                    <input 
+                      type="number" 
+                      step="5"
+                      placeholder="Ej. 30"
+                      value={(item.unitCost > 0 && item.newSellingPrice > 0) ? (((item.newSellingPrice - item.unitCost) / item.unitCost) * 100).toFixed(0) : ''}
+                      onChange={(e) => {
+                        const margin = parseFloat(e.target.value);
+                        if (!isNaN(margin) && item.unitCost > 0 && e.target.value !== '') {
+                           updateSellingPrice(item.product.id, parseFloat((item.unitCost * (1 + margin / 100)).toFixed(2)));
+                        }
+                      }}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-sm text-white font-bold focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-400 mb-1 block">Precio Venta ($)</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      step="0.01"
+                      value={item.newSellingPrice}
+                      onChange={(e) => updateSellingPrice(item.product.id, parseFloat(e.target.value) || 0)}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-sm text-indigo-400 font-bold focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
 
               </div>
@@ -367,7 +577,7 @@ export default function Purchases() {
               }}
               className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-blue-500"
             >
-              <option value="">-- Selecciona un proveedor --</option>
+              <option value="">-- Compra Independiente (Sin Proveedor) --</option>
               {suppliers.map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
@@ -383,7 +593,7 @@ export default function Purchases() {
               e.currentTarget.blur();
               processPurchase();
             }}
-            disabled={cart.length === 0 || !selectedSupplierId || isProcessing}
+            disabled={cart.length === 0 || isProcessing}
             className="w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] bg-blue-500 hover:bg-blue-400 text-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
           >
             {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
@@ -395,14 +605,42 @@ export default function Purchases() {
       {/* Modal de Ticket de Compra */}
       {showTicket && ticketData && (
         <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95">
-            <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShoppingCart className="h-8 w-8 text-blue-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2">¡Inventario Actualizado!</h2>
-            <p className="text-slate-400 mb-6">La mercancía se sumó a tus existencias.</p>
+          <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95 flex flex-col max-h-[90vh]">
             
-            <div className="flex gap-4">
+            <h2 className="text-xl font-bold text-white mb-4">Vista Previa de Compra</h2>
+            
+            {/* Contenedor del Ticket */}
+            <div className="flex-1 overflow-y-auto bg-white text-black p-6 rounded-lg text-xs font-mono text-left mb-6 mx-auto w-full max-w-[300px] custom-scrollbar shadow-inner" ref={ticketRef}>
+              <div className="text-center mb-4">
+                <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
+                <p>*** ENTRADA DE ALMACÉN ***</p>
+              </div>
+              
+              <div className="border-y border-dashed border-black my-4 py-2">
+                <p>Fecha: {ticketData.date.toLocaleString()}</p>
+                <p>Folio Ref: {ticketData.id.substring(0, 8)}</p>
+                <p>Proveedor: {ticketData.supplierName || 'Compra Independiente'}</p>
+              </div>
+
+              <ul className="mb-4 space-y-1">
+                {ticketData.items.map((item: any) => (
+                  <li key={item.product.id} className="flex justify-between items-start">
+                    <span className="flex-1 pr-2">{item.quantity}x {item.product.description}</span>
+                    <span className="font-medium whitespace-nowrap">${(item.unitCost * item.quantity).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="border-t border-dashed border-black pt-2 text-right">
+                <p className="text-sm font-bold">TOTAL COMPRA: ${ticketData.total.toFixed(2)}</p>
+              </div>
+              
+              <div className="text-center mt-6 text-xs text-gray-500">
+                Inventario actualizado automáticamente
+              </div>
+            </div>
+            
+            <div className="flex gap-4 mt-auto">
               <button 
                 onClick={() => setShowTicket(false)}
                 className="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors"
@@ -411,9 +649,9 @@ export default function Purchases() {
               </button>
               <button 
                 onClick={printTicket}
-                className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-500 hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/25"
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-500 hover:bg-blue-400 transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
               >
-                Imprimir Comprobante
+                <Printer className="h-5 w-5" /> Imprimir
               </button>
             </div>
           </div>
@@ -425,14 +663,14 @@ export default function Purchases() {
         {ticketData && (
           <div className="bg-white text-black p-6 w-[300px] text-xs font-mono" ref={ticketRef}>
             <div className="text-center mb-4">
-              <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
+              <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
               <p>*** ENTRADA DE ALMACÉN ***</p>
             </div>
             
             <div className="border-y border-dashed border-black my-4 py-2">
               <p>Fecha: {ticketData.date.toLocaleString()}</p>
               <p>Folio Ref: {ticketData.id.substring(0, 8)}</p>
-              <p>Proveedor: {ticketData.supplierName}</p>
+              <p>Proveedor: {ticketData.supplierName || 'Compra Independiente'}</p>
             </div>
 
             <ul className="mb-4">

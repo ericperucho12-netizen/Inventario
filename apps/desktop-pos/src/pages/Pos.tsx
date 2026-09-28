@@ -1,7 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/axios';
-import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Search, Loader2, Printer, X, CheckCircle2, User, FileText } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Search, Loader2, Printer, X, CheckCircle2, User, FileText, PackageOpen, Filter, Users, Barcode } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
+import { useOfflineStore } from '../store/offline.store';
+import { Link, useNavigate } from 'react-router-dom';
+import { fetchProductInfo } from '../lib/globalProductsApi';
+import { CameraScanner } from '../components/CameraScanner';
 
 export interface Product {
   id: string;
@@ -11,6 +15,7 @@ export interface Product {
   costPrice: number;
   stock: number;
   category: { id: string; name: string };
+  imageUrl?: string;
 }
 
 interface CartItem {
@@ -32,39 +37,94 @@ export default function Pos() {
   const [ticketData, setTicketData] = useState<{ items: CartItem[], total: number, date: Date, id: string, isCredit?: boolean, customerName?: string } | null>(null);
   
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'VOUCHER' | 'CREDIT'>('CASH');
   const [shiftStatus, setShiftStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showFastAdd, setShowFastAdd] = useState(false);
+  const [fastAddData, setFastAddData] = useState<any>(null);
+  const [isFetchingGlobal, setIsFetchingGlobal] = useState(false);
+  const [filterCategoryId, setFilterCategoryId] = useState('');
+  const [scannedNotFoundCode, setScannedNotFoundCode] = useState<string | null>(null);
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+  
+  const navigate = useNavigate();
 
   const ticketRef = useRef<HTMLDivElement>(null);
   
   // Custom Settings
-  const { defaultPrinter, scannerEnabled } = useSettingsStore();
+  const { defaultPrinter, scannerEnabled, storeName, storeAddress, storePhone, taxRate } = useSettingsStore();
   const barcodeBuffer = useRef('');
   const lastKeyTime = useRef(Date.now());
+  const { cachedProducts, setCachedProducts, cachedCustomers, setCachedCustomers, addPendingSale } = useOfflineStore();
 
-  const fetchProducts = () => {
-    api.get('/products').then(res => setProducts(res.data)).catch(console.error);
+  const fetchProducts = async () => {
+    if (!navigator.onLine && cachedProducts.length > 0) {
+      setProducts(cachedProducts);
+      return;
+    }
+    try {
+      const res = await api.get('/products');
+      setProducts(res.data);
+      setCachedProducts(res.data);
+    } catch (e) {
+      if (cachedProducts.length > 0) setProducts(cachedProducts);
+    }
   };
 
-  const fetchCustomers = () => {
-    api.get('/customers').then(res => setCustomers(res.data)).catch(console.error);
+  const fetchCategories = async () => {
+    if (!navigator.onLine) return;
+    try {
+      const res = await api.get('/categories');
+      setCategories(res.data);
+    } catch (e) {}
+  };
+
+  const fetchCustomers = async () => {
+    if (!navigator.onLine && cachedCustomers.length > 0) {
+      setCustomers(cachedCustomers);
+      return;
+    }
+    try {
+      const res = await api.get('/customers');
+      setCustomers(res.data);
+      setCachedCustomers(res.data);
+    } catch (e) {
+      if (cachedCustomers.length > 0) setCustomers(cachedCustomers);
+    }
   };
 
   const fetchShiftStatus = async () => {
+    if (!navigator.onLine) {
+      setShiftStatus('OPEN'); // Assume open if offline to allow sales
+      return;
+    }
     try {
       const res = await api.get('/cash-shifts/metrics');
       setShiftStatus(res.data.status);
     } catch (e) {
       console.error(e);
+      setShiftStatus('OPEN');
     }
   };
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
     fetchCustomers();
     fetchShiftStatus();
   }, []);
+
+  const handleBarcodeScan = async (scannedCode: string) => {
+    const product = products.find(p => p.barcode === scannedCode);
+    if (product) {
+      addToCart(product);
+      setSearchTerm(''); // Clear search if used
+    } else {
+      setScannedNotFoundCode(scannedCode);
+    }
+  };
 
   // Global scanner listener
   useEffect(() => {
@@ -87,12 +147,7 @@ export default function Pos() {
         if (barcodeBuffer.current.length > 0) {
           const scannedCode = barcodeBuffer.current;
           barcodeBuffer.current = '';
-          
-          // Auto add to cart if product found
-          const product = products.find(p => p.barcode === scannedCode);
-          if (product) {
-            addToCart(product);
-          }
+          handleBarcodeScan(scannedCode);
         }
       } else if (e.key.length === 1) {
         barcodeBuffer.current += e.key;
@@ -102,6 +157,8 @@ export default function Pos() {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [scannerEnabled, products]);
+
+
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -156,18 +213,46 @@ export default function Pos() {
         unitPrice: item.product.sellingPrice
       }));
 
-      const payload: any = { items };
-      if (selectedCustomerId) {
+      const payload: any = { 
+        items,
+        paymentMethod: paymentMethod === 'CREDIT' ? 'CASH' : paymentMethod 
+      };
+
+      if (paymentMethod === 'CREDIT') {
+        if (!selectedCustomerId) {
+          alert('Debes seleccionar un cliente para fiar la venta.');
+          setIsProcessing(false);
+          return;
+        }
         payload.customerId = selectedCustomerId;
-        payload.isCredit = true; // Auto-assign as credit if a customer is selected
+        payload.isCredit = true;
+      } else if (selectedCustomerId) {
+        payload.customerId = selectedCustomerId;
+        payload.isCredit = false;
       }
 
-      const response = await api.post('/sales', payload);
+      let responseId = '';
+      if (!navigator.onLine) {
+        responseId = 'OFFLINE-' + Date.now();
+        addPendingSale({
+          id: responseId,
+          items: payload.items,
+          paymentMethod: payload.paymentMethod,
+          customerId: payload.customerId,
+          isCredit: payload.isCredit,
+          total: subtotal,
+          date: new Date().toISOString(),
+        });
+      } else {
+        const response = await api.post('/sales', payload);
+        responseId = response.data.id;
+      }
       
-      if (selectedCustomerId) {
+      if (paymentMethod === 'CREDIT') {
         // Venta a crédito: No generar ticket
         setCart([]);
         setSelectedCustomerId('');
+        setPaymentMethod('CASH');
         fetchProducts();
         setIsProcessing(false);
         setToastMessage('Deuda asignada al cliente exitosamente.');
@@ -181,14 +266,15 @@ export default function Pos() {
         items: [...cart],
         total: subtotal,
         date: new Date(),
-        id: response.data.id,
-        isCredit: !!selectedCustomerId,
+        id: responseId,
+        isCredit: false,
         customerName: customer?.name
       });
       
       setShowTicket(true);
       setCart([]);
       setSelectedCustomerId('');
+      setPaymentMethod('CASH');
       fetchProducts();
     } catch (error: any) {
       console.error('Error procesando venta:', error);
@@ -244,10 +330,12 @@ export default function Pos() {
     }
   };
   
-  const filteredProducts = products.filter(p => 
-    p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.barcode.includes(searchTerm)
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          p.barcode.includes(searchTerm);
+    const matchesCategory = filterCategoryId ? p.category?.id === filterCategoryId : true;
+    return matchesSearch && matchesCategory;
+  });
 
   if (shiftStatus === 'CLOSED') {
     return (
@@ -269,23 +357,74 @@ export default function Pos() {
   }
 
   return (
-    <div className="flex h-full bg-slate-950 font-sans relative">
+    <div className="flex flex-col xl:flex-row flex-1 min-h-screen xl:min-h-0 xl:h-full bg-slate-950 font-sans relative">
       
+      {/* Camera Scanner Modal */}
+      {showCameraScanner && (
+        <CameraScanner 
+          onScan={(decodedText) => {
+            setShowCameraScanner(false);
+            handleBarcodeScan(decodedText);
+          }}
+          onClose={() => setShowCameraScanner(false)}
+        />
+      )}
+
       {/* Lado Izquierdo: Catálogo y Búsqueda */}
-      <div className="flex-1 flex flex-col p-6 h-full overflow-hidden">
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Buscar producto por nombre o código de barras..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-11 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-inner"
-          />
+      <div className="flex-1 flex flex-col p-4 md:p-6 xl:h-full overflow-hidden">
+        <div className="mb-4 lg:mb-6 flex flex-col md:flex-row gap-3 lg:gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <input 
+              type="text" 
+              placeholder="Buscar producto por nombre o código de barras..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchTerm.trim().length > 0) {
+                  handleBarcodeScan(searchTerm.trim());
+                }
+              }}
+              className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-11 pr-12 text-white focus:outline-none focus:border-emerald-500 transition-colors shadow-inner"
+            />
+            <button 
+              onClick={() => setShowCameraScanner(true)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors"
+              title="Escanear con Cámara"
+            >
+              <Barcode className="h-4 w-4" />
+            </button>
+          </div>
+          
+          
+          <div className="flex gap-3 lg:gap-4 shrink-0">
+            <div className="relative flex-1 md:w-48">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <select
+              value={filterCategoryId}
+              onChange={(e) => setFilterCategoryId(e.target.value)}
+              className="w-full bg-slate-900 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-slate-300 focus:outline-none focus:border-emerald-500 transition-colors appearance-none"
+            >
+              <option value="">Todas las Categorías</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+
+            <Link 
+              to="/customers"
+              className="flex items-center justify-center gap-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30 px-4 py-3 font-medium hover:bg-blue-500 hover:text-white transition-colors shrink-0"
+              title="Ir a Clientes"
+            >
+              <Users className="h-5 w-5" />
+              <span className="hidden md:inline">Clientes</span>
+            </Link>
+          </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="flex-1 overflow-visible xl:overflow-y-auto pr-2 custom-scrollbar pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {filteredProducts.map(product => (
               <button 
                 key={product.id}
@@ -298,6 +437,13 @@ export default function Pos() {
                     Stock: {product.stock}
                   </span>
                 </div>
+                
+                {product.imageUrl && (
+                  <div className="w-full flex justify-center mb-3">
+                    <img src={product.imageUrl} alt={product.description} className="h-20 object-contain rounded bg-white/5 p-1" />
+                  </div>
+                )}
+                
                 <h3 className="font-semibold text-white mb-2 line-clamp-2 w-full break-words">{product.description}</h3>
                 <div className="mt-auto w-full flex justify-between items-end gap-2 overflow-hidden">
                   <p className="text-xl font-bold text-emerald-400 shrink-0">${product.sellingPrice}</p>
@@ -315,8 +461,8 @@ export default function Pos() {
       </div>
 
       {/* Lado Derecho: Carrito (Ticket) */}
-      <div className="w-[400px] border-l border-white/10 bg-slate-900/50 flex flex-col h-full shadow-2xl z-10">
-        <div className="p-6 border-b border-white/10 flex items-center justify-between">
+      <div className="w-full xl:w-[400px] xl:h-full border-t xl:border-t-0 xl:border-l border-white/10 bg-slate-900/50 flex flex-col shadow-2xl z-10 shrink-0">
+        <div className="p-3 lg:p-6 border-b border-white/10 flex items-center justify-between sticky top-0 bg-slate-900/95 backdrop-blur z-10">
           <h2 className="text-xl font-bold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 text-emerald-400" />
             Venta Actual
@@ -326,7 +472,7 @@ export default function Pos() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <div className="flex-1 overflow-visible xl:overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {cart.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
               <ShoppingCart className="h-12 w-12 opacity-20" />
@@ -334,11 +480,17 @@ export default function Pos() {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.product.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group">
-                <div className="flex justify-between items-start mb-3 gap-2 overflow-hidden">
-                  <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">{item.product.description}</h4>
-                  <p className="font-bold text-emerald-400 shrink-0">${(item.product.sellingPrice * item.quantity).toFixed(2)}</p>
-                </div>
+              <div key={item.product.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group flex gap-3">
+                {item.product.imageUrl && (
+                  <div className="shrink-0 w-12 h-12 rounded bg-white/5 p-1 flex items-center justify-center">
+                    <img src={item.product.imageUrl} alt={item.product.description} className="max-w-full max-h-full object-contain" />
+                  </div>
+                )}
+                <div className="flex-1 flex flex-col">
+                  <div className="flex justify-between items-start mb-3 gap-2 overflow-hidden">
+                    <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">{item.product.description}</h4>
+                    <p className="font-bold text-emerald-400 shrink-0">${(item.product.sellingPrice * item.quantity).toFixed(2)}</p>
+                  </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400">${item.product.sellingPrice} c/u</p>
                   <div className="flex items-center gap-3">
@@ -354,30 +506,68 @@ export default function Pos() {
                     </button>
                   </div>
                 </div>
+                </div>
               </div>
             ))
           )}
         </div>
 
-        <div className="p-6 border-t border-white/10 bg-slate-900 mt-auto">
-          {/* Cliente y Crédito */}
-          <div className="mb-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm text-slate-300 font-medium">Asignar a cliente (Fiado)</label>
+        <div className="p-3 lg:p-6 border-t border-white/10 bg-slate-900 mt-auto shrink-0">
+          <div className="flex flex-col gap-3 mb-4">
+            <div>
+              <label className="text-sm text-slate-300 font-medium mb-1 block">Método de Pago</label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setPaymentMethod('CASH')}
+                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'CASH' ? 'bg-emerald-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  Efectivo
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('CARD')}
+                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'CARD' ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  Tarjeta
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('TRANSFER')}
+                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'TRANSFER' ? 'bg-purple-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  Transferencia
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('VOUCHER')}
+                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'VOUCHER' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  Vales
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('CREDIT')}
+                  className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'CREDIT' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                >
+                  Fiado
+                </button>
+              </div>
             </div>
-            <select
-              value={selectedCustomerId}
-              onChange={(e) => {
-                setSelectedCustomerId(e.target.value);
-                e.target.blur();
-              }}
-              className="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">-- Cobro en Efectivo (Sin Cliente) --</option>
-              {customers.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+
+            <div>
+              <label className="text-sm text-slate-300 font-medium mb-1 block">
+                {paymentMethod === 'CREDIT' ? 'Cliente a Fiar (Obligatorio)' : 'Asignar a Cliente (Opcional)'}
+              </label>
+              <select
+                value={selectedCustomerId}
+                onChange={(e) => {
+                  setSelectedCustomerId(e.target.value);
+                  e.target.blur();
+                }}
+                className={`w-full bg-slate-950 border rounded-lg py-2 px-3 text-sm text-white focus:outline-none transition-colors ${paymentMethod === 'CREDIT' && !selectedCustomerId ? 'border-amber-500 focus:border-amber-500' : 'border-slate-700 focus:border-emerald-500'}`}
+              >
+                <option value="">-- Sin Cliente --</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex justify-between items-center mb-6">
@@ -389,15 +579,17 @@ export default function Pos() {
               e.currentTarget.blur();
               processSale();
             }}
-            disabled={cart.length === 0 || isProcessing}
+            disabled={cart.length === 0 || isProcessing || (paymentMethod === 'CREDIT' && !selectedCustomerId)}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${
-              selectedCustomerId 
+              paymentMethod === 'CREDIT' 
                 ? 'bg-amber-500 hover:bg-amber-400 text-white hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]' 
+                : paymentMethod === 'CARD'
+                ? 'bg-indigo-500 hover:bg-indigo-400 text-white hover:shadow-[0_0_20px_rgba(99,102,241,0.4)]'
                 : 'bg-emerald-500 hover:bg-emerald-400 text-white hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]'
             }`}
           >
             {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-            {isProcessing ? 'Procesando...' : (selectedCustomerId ? 'Asignar Deuda (Fiado)' : 'Cobrar Venta')}
+            {isProcessing ? 'Procesando...' : (paymentMethod === 'CREDIT' ? 'Generar Deuda (Fiado)' : paymentMethod === 'CARD' ? 'Cobrar con Tarjeta' : paymentMethod === 'TRANSFER' ? 'Cobrar Transferencia' : paymentMethod === 'VOUCHER' ? 'Cobrar con Vales' : 'Cobrar en Efectivo')}
           </button>
         </div>
       </div>
@@ -416,8 +608,10 @@ export default function Pos() {
             <div className="flex-1 overflow-y-auto mb-6 custom-scrollbar bg-white rounded p-4" ref={ticketRef}>
               <div className="text-black font-mono text-xs">
                 <div className="text-center mb-4">
-                  <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
-                  <p>Ticket de Compra</p>
+                  <h1 className="font-bold text-base mb-1">{storeName || 'PeruchOS System'}</h1>
+                  {storeAddress && <p>{storeAddress}</p>}
+                  {storePhone && <p>Tel: {storePhone}</p>}
+                  <p className="mt-1 border-t border-dashed border-gray-400 pt-1">Ticket de Venta</p>
                   {ticketData.isCredit && (
                     <p className="font-bold border-y border-dashed border-black my-1 py-1">*** VENTA A CRÉDITO ***</p>
                   )}
@@ -449,6 +643,11 @@ export default function Pos() {
                 
                 <div className="border-t border-dashed border-gray-400 pt-2 text-right">
                   <p className="font-bold text-sm">TOTAL: ${ticketData.total.toFixed(2)}</p>
+                  {taxRate > 0 && (
+                    <p className="text-[10px] mt-1 text-gray-500">
+                      Incluye IVA ({taxRate}%): ${(ticketData.total - (ticketData.total / (1 + (taxRate / 100)))).toFixed(2)}
+                    </p>
+                  )}
                 </div>
                 
                 <div className="text-center mt-6 text-gray-500 text-[10px]">
@@ -477,6 +676,44 @@ export default function Pos() {
         </div>
       )}
 
+      {/* Global Fetch Loading Overlay */}
+      {isFetchingGlobal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 text-emerald-500 animate-spin mb-4" />
+          <p className="text-white font-medium">Buscando producto en base de datos global...</p>
+        </div>
+      )}
+
+      {/* Modal Redirección a Compras */}
+      {scannedNotFoundCode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-8 shadow-2xl relative text-center">
+            <div className="mx-auto w-16 h-16 bg-amber-500/20 text-amber-500 rounded-full flex items-center justify-center mb-6">
+              <PackageOpen className="h-8 w-8" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Producto Nuevo</h2>
+            <p className="text-slate-400 mb-6">
+              El código <strong className="text-white">{scannedNotFoundCode}</strong> no existe en tu inventario.
+              <br /><br />
+              ¿Deseas ir a la sección de <strong className="text-emerald-400">Compras</strong> para agregarlo e ingresar la cantidad correcta al stock?
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setScannedNotFoundCode(null)}
+                className="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => navigate('/purchases', { state: { scannedCode: scannedNotFoundCode } })}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-400 transition-colors shadow-lg shadow-emerald-500/25 flex justify-center items-center gap-2"
+              >
+                Ir a Compras
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Toast Notification */}
       {toastMessage && (
         <div className="absolute top-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg font-medium animate-fade-in z-50">

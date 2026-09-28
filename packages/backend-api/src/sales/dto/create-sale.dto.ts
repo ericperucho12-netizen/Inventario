@@ -6,4 +6,5 @@ export class CreateSaleDto {
   }[];
   isCredit?: boolean;
   customerId?: string;
+  paymentMethod?: string;
 }

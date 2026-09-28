@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
-import { Plus, Pencil, Trash2, Loader2, Building2 } from 'lucide-react';
-
+import { Plus, Pencil, Trash2, Loader2, Building2, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 interface Supplier {
   id: string;
   name: string;
@@ -100,7 +100,7 @@ export default function Suppliers() {
 
   return (
     <div className="p-8 h-full flex flex-col">
-      <header className="mb-8 flex items-center justify-between">
+      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Building2 className="h-8 w-8 text-blue-500" />
@@ -108,13 +108,22 @@ export default function Suppliers() {
           </h1>
           <p className="text-slate-400 mt-1">Administra las empresas que te surten mercancía</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="bg-blue-500 hover:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20"
-        >
-          <Plus className="h-5 w-5" />
-          Nuevo Proveedor
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto">
+          <Link 
+            to="/purchases"
+            className="w-full sm:w-auto flex justify-center items-center gap-2 rounded-lg bg-slate-800 text-slate-300 px-4 py-3 sm:py-2 font-medium hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver a Compras
+          </Link>
+          <button
+            onClick={() => handleOpenModal()}
+            className="w-full sm:w-auto flex justify-center items-center gap-2 bg-blue-500 hover:bg-blue-400 text-white px-4 py-3 sm:py-2 rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/20"
+          >
+            <Plus className="h-5 w-5" />
+            Nuevo Proveedor
+          </button>
+        </div>
       </header>
 
       <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm flex-1 flex flex-col overflow-hidden">

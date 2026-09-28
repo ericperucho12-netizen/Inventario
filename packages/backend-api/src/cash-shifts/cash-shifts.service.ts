@@ -9,8 +9,8 @@ import { Sale } from '../sales/entities/sale.entity.js';
 export class CashShiftsService {
   constructor(private dataSource: DataSource) {}
 
-  async open(createCashShiftDto: CreateCashShiftDto, userId: string) {
-    const current = await this.getCurrent();
+  async open(createCashShiftDto: CreateCashShiftDto, userId: string, companyId: string) {
+    const current = await this.getCurrent(companyId);
     if (current) {
       throw new BadRequestException('Ya existe un turno de caja abierto');
     }
@@ -18,19 +18,20 @@ export class CashShiftsService {
     const shift = new CashShift();
     shift.initialAmount = createCashShiftDto.initialAmount;
     shift.userId = userId;
+    shift.companyId = companyId;
     
     return this.dataSource.manager.save(shift);
   }
 
-  async close(closeCashShiftDto: CloseCashShiftDto, userId: string) {
-    const current = await this.getCurrent();
+  async close(closeCashShiftDto: CloseCashShiftDto, userId: string, companyId: string) {
+    const current = await this.getCurrent(companyId);
     if (!current) {
       throw new BadRequestException('No hay ninguna caja abierta para cerrar');
     }
 
     // Calcular suma de ventas del turno
     const sales = await this.dataSource.manager.find(Sale, {
-      where: { cashShiftId: current.id }
+      where: { cashShiftId: current.id, companyId }
     });
 
     const totalSales = sales.reduce((acc, sale) => {
@@ -48,20 +49,20 @@ export class CashShiftsService {
     return this.dataSource.manager.save(current);
   }
 
-  async getCurrent() {
+  async getCurrent(companyId: string) {
     return this.dataSource.manager.findOne(CashShift, {
-      where: { status: 'OPEN' }
+      where: { status: 'OPEN', companyId }
     });
   }
 
-  async getMetrics() {
-    const current = await this.getCurrent();
+  async getMetrics(companyId: string) {
+    const current = await this.getCurrent(companyId);
     if (!current) {
       return { status: 'CLOSED', salesTotal: 0, salesCount: 0 };
     }
 
     const sales = await this.dataSource.manager.find(Sale, {
-      where: { cashShiftId: current.id }
+      where: { cashShiftId: current.id, companyId }
     });
 
     const salesTotal = sales.reduce((acc, sale) => {

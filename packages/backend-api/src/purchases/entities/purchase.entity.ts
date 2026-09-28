@@ -1,9 +1,17 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Supplier } from '../../suppliers/entities/supplier.entity.js';
 import { PurchaseDetail } from './purchase-detail.entity.js';
+import { Company } from '../../companies/entities/company.entity.js';
 
 @Entity('purchases')
 export class Purchase {
+  @Column({ nullable: true }) // TODO: Change to false when forcing multi-tenant
+  companyId: string;
+
+  @ManyToOne(() => Company)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -14,7 +22,7 @@ export class Purchase {
   @JoinColumn({ name: 'supplierId' })
   supplier: any;
 
-  @Column()
+  @Column({ nullable: true })
   supplierId: string;
 
   @Column({ nullable: true })

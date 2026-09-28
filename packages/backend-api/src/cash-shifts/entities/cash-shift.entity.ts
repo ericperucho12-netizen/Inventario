@@ -1,7 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Company } from '../../companies/entities/company.entity.js';
 
 @Entity('cash_shifts')
 export class CashShift {
+  @Column({ nullable: true }) // TODO: Change to false when forcing multi-tenant
+  companyId: string;
+
+  @ManyToOne(() => Company)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -23,6 +31,6 @@ export class CashShift {
   @CreateDateColumn()
   openedAt: Date;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   closedAt: Date;
 }

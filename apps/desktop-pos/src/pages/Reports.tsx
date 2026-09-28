@@ -180,7 +180,7 @@ export default function Reports() {
           <div className="flex justify-end">
             <button 
               onClick={exportToExcel}
-              className="bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition-all transform hover:scale-105"
+              className="bg-rose-500 hover:bg-rose-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all transform hover:scale-105"
             >
               <Download className="h-5 w-5" />
               Descargar Reporte en Excel (.xlsx)
@@ -207,13 +207,13 @@ export default function Reports() {
               <p className="text-3xl font-bold text-white">${data.summary.totalCost.toFixed(2)}</p>
             </div>
 
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group">
-              <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/20 rounded-full blur-xl group-hover:bg-emerald-500/40 transition-all"></div>
-              <div className="flex items-center gap-3 mb-2 text-emerald-400 font-bold">
+            <div className="bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 relative overflow-hidden group">
+              <div className="absolute -right-4 -top-4 w-24 h-24 bg-rose-500/20 rounded-full blur-xl group-hover:bg-rose-500/40 transition-all"></div>
+              <div className="flex items-center gap-3 mb-2 text-rose-400 font-bold">
                 <TrendingUp className="h-5 w-5" />
                 <span>Utilidad Neta (Ganancia Libre)</span>
               </div>
-              <p className="text-4xl font-bold text-emerald-400">${data.summary.netProfit.toFixed(2)}</p>
+              <p className="text-4xl font-bold text-rose-400">${data.summary.netProfit.toFixed(2)}</p>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export default function Reports() {
                     <th className="px-4 py-3">Producto</th>
                     <th className="px-4 py-3 text-center">Cantidad Vendida</th>
                     <th className="px-4 py-3 text-right">Ingreso Bruto</th>
-                    <th className="px-4 py-3 text-right text-emerald-400 rounded-r-lg">Utilidad Generada</th>
+                    <th className="px-4 py-3 text-right text-rose-400 rounded-r-lg">Utilidad Generada</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -243,7 +243,7 @@ export default function Reports() {
                         <span className="bg-slate-800 text-slate-300 px-2 py-1 rounded-full text-xs font-bold">{p.quantity}</span>
                       </td>
                       <td className="px-4 py-3 text-right text-slate-300">${p.revenue.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-400">${(p.revenue - p.cost).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-bold text-rose-400">${(p.revenue - p.cost).toFixed(2)}</td>
                     </tr>
                   ))}
                   {data.topProducts.length === 0 && (

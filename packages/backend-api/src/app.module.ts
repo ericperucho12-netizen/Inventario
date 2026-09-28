@@ -14,15 +14,23 @@ import { PurchasesModule } from './purchases/purchases.module.js';
 import { CustomersModule } from './customers/customers.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 import { ReportsModule } from './reports/reports.module.js';
+import { ExpensesModule } from './expenses/expenses.module.js';
+import { StripeModule } from './stripe/stripe.module.js';
+import { CompaniesModule } from './companies/companies.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
-      type: 'sqlite',
-      database: 'peruchos.sqlite',
+      type: 'postgres',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      username: process.env.DB_USERNAME || 'postgres',
+      password: process.env.DB_PASSWORD || 'Pelusa01',
+      database: process.env.DB_NAME || 'peruchos',
       autoLoadEntities: true,
-      synchronize: process.env.NODE_ENV !== 'production', // Solo para desarrollo
+      synchronize: true, // Crea/actualiza tablas automáticamente
+      ssl: process.env.DB_HOST?.includes('rds.amazonaws.com') ? { rejectUnauthorized: false } : false,
     }),
     UsersModule,
     AuthModule,
@@ -35,6 +43,9 @@ import { ReportsModule } from './reports/reports.module.js';
     CustomersModule,
     DashboardModule,
     ReportsModule,
+    ExpensesModule,
+    StripeModule,
+    CompaniesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

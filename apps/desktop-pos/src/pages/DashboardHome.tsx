@@ -1,25 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../lib/axios';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend
 } from 'recharts';
 import { 
-  TrendingUp, Users, AlertTriangle, Package, Loader2, DollarSign, Calendar, Lock, Unlock, X, Printer
+  TrendingUp, Users, AlertTriangle, Package, Loader2, DollarSign, Calendar, Lock, Unlock, X, Printer, CreditCard, ShoppingCart, Wallet
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSettingsStore } from '../store/settings.store';
 
 interface DashboardSummary {
   todayTotal: number;
   monthTotal: number;
+  monthPurchases: number;
+  monthExpenses: number;
+  monthProfit: number;
   totalCustomers: number;
   lowStockProducts: number;
-  chartData: { date: string; name: string; total: number }[];
+  accountsReceivable: number;
+  inventoryValue: number;
+  chartData: { date: string; name: string; ventas: number; compras: number }[];
   recentSales: any[];
+  topProducts: { name: string; totalSold: number; profit: number }[];
 }
 
 export default function DashboardHome() {
+  const { theme } = useSettingsStore();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('week');
 
   // Cash Shift State
   const [shiftMetrics, setShiftMetrics] = useState<any>(null);
@@ -32,12 +41,12 @@ export default function DashboardHome() {
 
   useEffect(() => {
     fetchSummary();
-  }, []);
+  }, [period]);
 
   const fetchSummary = async () => {
     try {
       const [summaryRes, shiftRes] = await Promise.all([
-        api.get('/dashboard/summary'),
+        api.get(`/dashboard/summary?period=${period}`),
         api.get('/cash-shifts/metrics')
       ]);
       setSummary(summaryRes.data);
@@ -104,7 +113,7 @@ export default function DashboardHome() {
             </style>
           </head>
           <body>
-            <div class="text-center font-bold">Abarrotes PeruchOS</div>
+            <div class="text-center font-bold">PeruchOS System</div>
             <div class="text-center">*** CORTE Z ***</div>
             <div class="border-y">
               <p>Fecha Cierre: ${new Date(ticketZ.closedAt).toLocaleString()}</p>
@@ -150,16 +159,16 @@ export default function DashboardHome() {
 
         {/* Control de Caja Header */}
         {shiftMetrics && (
-          <div className={`flex items-center gap-4 px-6 py-4 rounded-2xl border backdrop-blur-sm shadow-xl ${
+          <div className={`flex flex-col sm:flex-row items-center gap-4 px-6 py-4 rounded-2xl border backdrop-blur-sm shadow-xl ${
             shiftMetrics.status === 'OPEN' 
               ? 'bg-emerald-500/10 border-emerald-500/20' 
               : 'bg-red-500/10 border-red-500/20'
           }`}>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
               <div className={`p-2 rounded-full ${shiftMetrics.status === 'OPEN' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
                 {shiftMetrics.status === 'OPEN' ? <Unlock className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
               </div>
-              <div>
+              <div className="text-center sm:text-left">
                 <p className="text-sm text-slate-400 font-medium">Estado de Caja</p>
                 <p className={`font-bold ${shiftMetrics.status === 'OPEN' ? 'text-emerald-400' : 'text-red-400'}`}>
                   {shiftMetrics.status === 'OPEN' ? 'ABIERTA' : 'CERRADA'}
@@ -167,11 +176,11 @@ export default function DashboardHome() {
               </div>
             </div>
             
-            <div className="h-10 w-px bg-white/10 mx-2"></div>
+            <div className="hidden sm:block h-10 w-px bg-white/10 mx-2"></div>
             
             <button
               onClick={() => shiftMetrics.status === 'OPEN' ? setShowCloseModal(true) : setShowOpenModal(true)}
-              className={`font-bold py-2 px-6 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0 ${
+              className={`w-full sm:w-auto font-bold py-3 sm:py-2 px-6 rounded-xl transition-all shadow-lg hover:-translate-y-0.5 active:translate-y-0 ${
                 shiftMetrics.status === 'OPEN'
                   ? 'bg-red-500 hover:bg-red-400 text-white shadow-red-500/25'
                   : 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/25'
@@ -186,7 +195,7 @@ export default function DashboardHome() {
       {/* Tarjetas Principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {/* Ventas de Hoy */}
-        <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+        <div className="bg-slate-900/50 border border-emerald-500/20 hover:border-emerald-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
@@ -200,7 +209,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Ventas del Mes */}
-        <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+        <div className="bg-slate-900/50 border border-teal-500/20 hover:border-teal-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-teal-500/10 rounded-full blur-xl group-hover:bg-teal-500/20 transition-all"></div>
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-teal-500/20 text-teal-400 rounded-xl">
@@ -214,7 +223,7 @@ export default function DashboardHome() {
         </div>
 
         {/* Clientes */}
-        <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+        <div className="bg-slate-900/50 border border-blue-500/20 hover:border-blue-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-all"></div>
           <div className="flex items-center gap-4 mb-4">
             <div className="p-3 bg-blue-500/20 text-blue-400 rounded-xl">
@@ -245,54 +254,139 @@ export default function DashboardHome() {
         </Link>
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        
+        {/* Inversión (Compras) */}
+        <div className="bg-slate-900/50 border border-indigo-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl">
+              <ShoppingCart className="h-6 w-6" />
+            </div>
+            <h3 className="text-slate-400 font-medium">Inversión (Compras)</h3>
+          </div>
+          <p className="text-3xl font-bold text-indigo-400 mb-1">
+            ${(summary.monthPurchases || 0).toFixed(2)}
+          </p>
+          <span className="text-xs text-indigo-400/50 mt-auto">Mercancía este mes</span>
+        </div>
+
+        {/* Gastos Hormiga */}
+        <Link to="/expenses" className="bg-slate-900/50 border border-orange-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group cursor-pointer hover:border-orange-500/40 transition-all">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-orange-500/10 rounded-full blur-xl group-hover:bg-orange-500/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-orange-500/20 text-orange-400 rounded-xl">
+              <Wallet className="h-6 w-6" />
+            </div>
+            <h3 className="text-slate-400 font-medium">Gastos</h3>
+          </div>
+          <p className="text-3xl font-bold text-orange-400 mb-1">
+            ${(summary.monthExpenses || 0).toFixed(2)}
+          </p>
+          <span className="text-xs text-orange-400/50 mt-auto flex items-center gap-1 group-hover:text-orange-400/80">
+            Ver Detalles <TrendingUp className="h-3 w-3" />
+          </span>
+        </Link>
+
+        {/* Utilidades (Ganancias) */}
+        <div className="bg-slate-900/50 border border-emerald-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+              <TrendingUp className="h-6 w-6" />
+            </div>
+            <h3 className="text-slate-400 font-medium">Utilidad Neta</h3>
+          </div>
+          <p className="text-3xl font-bold text-emerald-400 mb-1">
+            ${(summary.monthProfit || 0).toFixed(2)}
+          </p>
+          <span className="text-xs text-emerald-400/50 mt-auto">Ganancias este mes</span>
+        </div>
+
+        {/* Cuentas por Cobrar */}
+        <div className="bg-slate-900/50 border border-amber-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-amber-500/20 text-amber-400 rounded-xl">
+              <CreditCard className="h-6 w-6" />
+            </div>
+            <h3 className="text-slate-400 font-medium">Cuentas por Cobrar</h3>
+          </div>
+          <p className="text-3xl font-bold text-amber-400 mb-1">
+            ${(summary.accountsReceivable || 0).toFixed(2)}
+          </p>
+          <span className="text-xs text-amber-400/50 mt-auto">Dinero en la calle</span>
+        </div>
+
+        {/* Valor de Inventario */}
+        <div className="bg-slate-900/50 border border-purple-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
+          <div className="absolute -right-4 -top-4 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition-all"></div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-purple-500/20 text-purple-400 rounded-xl">
+              <Package className="h-6 w-6" />
+            </div>
+            <h3 className="text-slate-400 font-medium">Valor del Inventario</h3>
+          </div>
+          <p className="text-3xl font-bold text-purple-400 mb-1">
+            ${(summary.inventoryValue || 0).toFixed(2)}
+          </p>
+          <span className="text-xs text-purple-400/50 mt-auto">Costo de mercancía en stock</span>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Gráfica */}
         <div className="lg:col-span-2 bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm flex flex-col h-[400px]">
-          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-emerald-500" />
-            Ventas de los últimos 7 días
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-bold flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-emerald-500" />
+              Ventas y Compras
+            </h3>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+              className="bg-slate-800 border border-slate-700 text-sm text-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+            >
+              <option value="week">Últimos 7 días</option>
+              <option value="month">Últimos 30 días</option>
+            </select>
+          </div>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={summary.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={theme === 'light' ? '#00000010' : '#ffffff10'} vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke="#ffffff50" 
+                  stroke={theme === 'light' ? '#64748b' : '#ffffff50'} 
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                   dy={10}
                 />
                 <YAxis 
-                  stroke="#ffffff50" 
+                  stroke={theme === 'light' ? '#64748b' : '#ffffff50'} 
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) => `$${value}`}
                 />
                 <Tooltip
-                  cursor={{ fill: '#ffffff05' }}
-                  contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff10', borderRadius: '12px' }}
-                  itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
-                  labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Ingresos']}
+                  cursor={{ fill: theme === 'light' ? '#00000005' : '#ffffff05' }}
+                  contentStyle={{ backgroundColor: theme === 'light' ? '#ffffff' : '#0f172a', border: `1px solid ${theme === 'light' ? '#e2e8f0' : '#ffffff10'}`, borderRadius: '12px' }}
+                  labelStyle={{ color: theme === 'light' ? '#475569' : '#94a3b8', marginBottom: '4px' }}
+                  formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.charAt(0).toUpperCase() + name.slice(1)]}
                 />
-                <Bar dataKey="total" radius={[6, 6, 0, 0]} maxBarSize={50}>
-                  {summary.chartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={index === summary.chartData.length - 1 ? '#10b981' : '#10b98180'} 
-                    />
-                  ))}
-                </Bar>
+                <Legend wrapperStyle={{ paddingTop: '10px' }} />
+                <Bar dataKey="ventas" name="Ventas" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="compras" name="Compras" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="gastos" name="Gastos" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Últimas Ventas */}
-        <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm flex flex-col">
+        <div className="bg-slate-900/50 border border-teal-500/20 hover:border-teal-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
             <Package className="h-5 w-5 text-teal-500" />
             Actividad Reciente
@@ -329,6 +423,43 @@ export default function DashboardHome() {
           <Link to="/history" className="mt-4 pt-4 border-t border-white/10 text-center text-sm text-emerald-400 font-medium hover:text-emerald-300 transition-colors">
             Ver todo el historial →
           </Link>
+        </div>
+      </div>
+
+      {/* Top Products */}
+      <div className="mt-6 bg-slate-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm">
+        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-purple-500" />
+          Productos más vendidos y Ganancias
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-900/50 text-slate-300">
+              <tr>
+                <th className="px-4 py-3 font-medium">Producto</th>
+                <th className="px-4 py-3 font-medium text-right">Cantidad Vendida</th>
+                <th className="px-4 py-3 font-medium text-right">Ganancia (MXN)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {summary.topProducts?.map((product, idx) => (
+                <tr key={idx} className="hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 font-medium text-white">{product.name}</td>
+                  <td className="px-4 py-3 text-right text-slate-300">{product.totalSold}</td>
+                  <td className="px-4 py-3 text-right font-bold text-emerald-400">
+                    ${product.profit.toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+              {(!summary.topProducts || summary.topProducts.length === 0) && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                    Aún no hay datos de productos más vendidos.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -443,7 +574,7 @@ export default function DashboardHome() {
             <div className="flex-1 overflow-y-auto mb-6 custom-scrollbar bg-white rounded p-4">
               <div className="text-black font-mono text-xs">
                 <div className="text-center mb-4">
-                  <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
+                  <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
                   <p>*** CORTE Z ***</p>
                   <p>{new Date(ticketZ.closedAt).toLocaleString()}</p>
                 </div>

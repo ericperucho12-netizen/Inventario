@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/axios';
-import { PackageOpen, Tags, Plus, Loader2, Search } from 'lucide-react';
+import { PackageOpen, Tags, Plus, Loader2, Search, Filter } from 'lucide-react';
+import { COMMON_PRODUCTS } from '../lib/commonProducts';
 
 interface Category {
   id: string;
@@ -16,6 +17,7 @@ interface Product {
   sellingPrice: number;
   stock: number;
   category: Category;
+  imageUrl?: string;
 }
 
 export default function Catalog() {
@@ -24,6 +26,7 @@ export default function Catalog() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategoryId, setFilterCategoryId] = useState<string>('');
 
   // Form states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,8 +43,19 @@ export default function Catalog() {
   const [prodPrice, setProdPrice] = useState('');
   const [prodStock, setProdStock] = useState('0');
   const [prodCatId, setProdCatId] = useState('');
+  const [prodImageUrl, setProdImageUrl] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+
+  // Autofill logic for global catalog
+  useEffect(() => {
+    if (!editingProduct && prodBarcode && COMMON_PRODUCTS[prodBarcode]) {
+      // Solo sobreescribir si está vacío o si coincide con otro producto común
+      if (!prodDesc || Object.values(COMMON_PRODUCTS).includes(prodDesc)) {
+        setProdDesc(COMMON_PRODUCTS[prodBarcode]);
+      }
+    }
+  }, [prodBarcode, editingProduct]);
 
   const handleOpenNew = () => {
     setEditingProduct(null);
@@ -53,6 +67,7 @@ export default function Catalog() {
       setProdPrice('');
       setProdStock('0');
       setProdCatId('');
+      setProdImageUrl('');
     } else {
       setCatName('');
       setCatDesc('');
@@ -68,6 +83,7 @@ export default function Catalog() {
     setProdPrice(prod.sellingPrice?.toString() || '0');
     setProdStock(prod.stock?.toString() || '0');
     setProdCatId(prod.category?.id || '');
+    setProdImageUrl(prod.imageUrl || '');
     setIsModalOpen(true);
   };
 
@@ -117,7 +133,8 @@ export default function Catalog() {
         costPrice: Number(prodCost),
         sellingPrice: Number(prodPrice),
         stock: Number(prodStock),
-        categoryId: prodCatId
+        categoryId: prodCatId,
+        imageUrl: prodImageUrl || null
       };
       
       if (editingProduct) {
@@ -135,10 +152,23 @@ export default function Catalog() {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.barcode.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleDeleteProduct = async (id: string, description: string) => {
+    if (window.confirm(`¿Estás seguro de que deseas eliminar el producto: ${description}?`)) {
+      try {
+        await api.delete(`/products/${id}`);
+        fetchData(); // Refresh the list
+      } catch (error) {
+        alert('Error al eliminar el producto.');
+      }
+    }
+  };
+
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          p.barcode.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategoryId ? p.category?.id === filterCategoryId : true;
+    return matchesSearch && matchesCategory;
+  });
 
   const filteredCategories = categories.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -146,14 +176,14 @@ export default function Catalog() {
 
   return (
     <div className="p-8">
-      <header className="mb-8 flex items-center justify-between">
+      <header className="mb-6 md:mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Catálogo</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Catálogo</h1>
           <p className="text-slate-400 mt-1">Gestiona los productos y familias</p>
         </div>
         <button 
           onClick={handleOpenNew}
-          className="flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 font-medium hover:bg-emerald-400 transition-colors"
+          className="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 font-medium hover:bg-purple-400 transition-colors"
         >
           <Plus className="h-4 w-4" />
           Nuevo {activeTab === 'products' ? 'Producto' : 'Categoría'}
@@ -161,8 +191,8 @@ export default function Catalog() {
       </header>
 
       {/* Tabs y Búsqueda */}
-      <div className="mb-6 flex gap-4 border-b border-white/10 pb-4 justify-between items-center">
-        <div className="flex gap-4">
+      <div className="mb-6 flex flex-col md:flex-row gap-4 border-b border-white/10 pb-4 justify-between md:items-center">
+        <div className="flex gap-2 md:gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
           <button 
             onClick={() => setActiveTab('products')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -183,23 +213,40 @@ export default function Catalog() {
           </button>
         </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input 
-            type="text"
-            placeholder="Buscar..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-64 rounded-lg border border-slate-700 bg-slate-800/50 py-2 pl-9 pr-4 text-sm text-white focus:border-emerald-500 focus:outline-none"
-          />
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          {activeTab === 'products' && (
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <select
+                value={filterCategoryId}
+                onChange={(e) => setFilterCategoryId(e.target.value)}
+                className="w-full sm:w-48 rounded-lg border border-slate-700 bg-slate-800/50 py-2 pl-9 pr-4 text-sm text-slate-300 focus:border-purple-500 focus:outline-none appearance-none"
+              >
+                <option value="">Todas las Categorías</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input 
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 rounded-lg border border-slate-700 bg-slate-800/50 py-2 pl-9 pr-4 text-sm text-white focus:border-purple-500 focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 
       {/* Tabla */}
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-x-auto">
         {loading ? (
           <div className="p-12 flex justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
           </div>
         ) : (
           <table className="w-full text-left text-sm">
@@ -229,7 +276,7 @@ export default function Catalog() {
                   <td className="px-6 py-4 font-mono">{prod.barcode}</td>
                   <td className="px-6 py-4">{prod.description}</td>
                   <td className="px-6 py-4">
-                    <span className="inline-block whitespace-nowrap rounded bg-emerald-500/10 px-2 py-1 text-xs font-medium text-emerald-400">
+                    <span className="inline-block whitespace-nowrap rounded bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-400">
                       {prod.category?.name || 'N/A'}
                     </span>
                   </td>
@@ -240,7 +287,7 @@ export default function Catalog() {
                   </td>
                   <td className="px-6 py-4 text-slate-400 font-medium">${prod.costPrice}</td>
                   <td className="px-6 py-4 font-medium">${prod.sellingPrice}</td>
-                  <td className="px-6 py-4 text-emerald-400 font-medium">
+                  <td className="px-6 py-4 text-purple-400 font-medium">
                     ${(prod.sellingPrice * prod.stock).toFixed(2)}
                   </td>
                   <td className="px-6 py-4 text-teal-400 font-medium">
@@ -249,9 +296,15 @@ export default function Catalog() {
                   <td className="px-6 py-4 text-right">
                     <button 
                       onClick={() => handleEditProduct(prod)}
-                      className="text-sm font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+                      className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors mr-4"
                     >
                       Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteProduct(prod.id, prod.description)}
+                      className="text-sm font-medium text-red-400 hover:text-red-300 transition-colors"
+                    >
+                      Eliminar
                     </button>
                   </td>
                 </tr>
@@ -282,45 +335,49 @@ export default function Catalog() {
                 <>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Nombre</label>
-                    <input required type="text" value={catName} onChange={e => setCatName(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none" />
+                    <input required type="text" value={catName} onChange={e => setCatName(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Descripción</label>
-                    <input type="text" value={catDesc} onChange={e => setCatDesc(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none" />
+                    <input type="text" value={catDesc} onChange={e => setCatDesc(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Código de Barras</label>
-                    <input required type="text" value={prodBarcode} onChange={e => setProdBarcode(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none" />
+                    <input required type="text" value={prodBarcode} onChange={e => setProdBarcode(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Descripción</label>
-                    <input required type="text" value={prodDesc} onChange={e => setProdDesc(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none" />
+                    <input required type="text" value={prodDesc} onChange={e => setProdDesc(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">
                       <label className="mb-1 block text-sm font-medium text-slate-300">Costo</label>
-                      <input required type="number" step="0.01" value={prodCost} onChange={e => setProdCost(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none" />
+                      <input required type="number" step="0.01" value={prodCost} onChange={e => setProdCost(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                     </div>
                     <div className="flex-1">
                       <label className="mb-1 block text-sm font-medium text-slate-300">Precio Venta</label>
-                      <input required type="number" step="0.01" value={prodPrice} onChange={e => setProdPrice(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-emerald-500 focus:outline-none" />
+                      <input required type="number" step="0.01" value={prodPrice} onChange={e => setProdPrice(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none" />
                     </div>
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Stock Actual</label>
-                    <input required type="number" step="1" value={prodStock} onChange={e => setProdStock(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-emerald-500 focus:outline-none" />
+                    <input required type="number" step="1" value={prodStock} onChange={e => setProdStock(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none" />
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Categoría</label>
-                    <select required value={prodCatId} onChange={e => setProdCatId(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none">
+                    <select required value={prodCatId} onChange={e => setProdCatId(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none">
                       <option value="">Seleccione una categoría</option>
                       {categories.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-slate-300">Enlace de Foto (URL opcional)</label>
+                    <input type="url" placeholder="https://ejemplo.com/foto.jpg" value={prodImageUrl} onChange={e => setProdImageUrl(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
                   </div>
                 </>
               )}
@@ -329,7 +386,7 @@ export default function Catalog() {
                 <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-lg px-4 py-2 font-medium text-slate-300 hover:bg-white/5 transition-colors">
                   Cancelar
                 </button>
-                <button type="submit" disabled={isSubmitting} className="rounded-lg bg-emerald-500 px-4 py-2 font-medium text-white hover:bg-emerald-400 transition-colors disabled:opacity-50">
+                <button type="submit" disabled={isSubmitting} className="rounded-lg bg-purple-500 px-4 py-2 font-medium text-white hover:bg-purple-400 transition-colors disabled:opacity-50">
                   Guardar
                 </button>
               </div>

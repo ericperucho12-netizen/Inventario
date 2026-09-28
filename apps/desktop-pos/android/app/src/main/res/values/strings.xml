@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">peruchos</string>
+    <string name="title_activity_main">peruchos</string>
+    <string name="package_name">com.peruchos.pos</string>
+    <string name="custom_url_scheme">com.peruchos.pos</string>
+</resources>

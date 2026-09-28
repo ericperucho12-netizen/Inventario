@@ -1,5 +1,5 @@
 export class CreatePurchaseDto {
-  supplierId: string;
+  supplierId?: string;
   items: {
     productId: string;
     quantity: number;

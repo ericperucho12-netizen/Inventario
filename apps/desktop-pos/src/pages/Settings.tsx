@@ -1,13 +1,24 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle, Palette } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
 
 export default function Settings() {
-  const { defaultPrinter, scannerEnabled, setDefaultPrinter, setScannerEnabled } = useSettingsStore();
+  const { 
+    defaultPrinter, scannerEnabled, theme, 
+    storeName, storeAddress, storePhone, taxRate,
+    setDefaultPrinter, setScannerEnabled, setTheme,
+    setStoreInfo, setTaxRate 
+  } = useSettingsStore();
   const [printers, setPrinters] = useState<{ name: string; isDefault: boolean }[]>([]);
   const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [saved, setSaved] = useState(false);
+
+  // Local state for text inputs so we don't cause renders on every keystroke
+  const [localStoreName, setLocalStoreName] = useState(storeName);
+  const [localStoreAddress, setLocalStoreAddress] = useState(storeAddress);
+  const [localStorePhone, setLocalStorePhone] = useState(storePhone);
+  const [localTaxRate, setLocalTaxRate] = useState(taxRate.toString());
 
   useEffect(() => {
     // Check if we are in Electron
@@ -33,6 +44,8 @@ export default function Settings() {
   }, []);
 
   const handleSave = () => {
+    setStoreInfo({ storeName: localStoreName, storeAddress: localStoreAddress, storePhone: localStorePhone });
+    setTaxRate(Number(localTaxRate) || 0);
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -41,13 +54,78 @@ export default function Settings() {
     <div className="p-8 max-w-4xl mx-auto h-full overflow-auto">
       <header className="mb-8">
         <h1 className="text-3xl font-bold flex items-center gap-3">
-          <SettingsIcon className="h-8 w-8 text-emerald-500" />
+          <SettingsIcon className="h-8 w-8 text-slate-500" />
           Ajustes del Sistema
         </h1>
         <p className="text-slate-400 mt-1">Configura tus dispositivos y preferencias</p>
       </header>
 
-      <div className="space-y-8">
+      <div className="space-y-8 pb-20">
+        {/* Sección de Datos de la Tienda */}
+        <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+            <SettingsIcon className="h-6 w-6 text-emerald-400" />
+            <h2 className="text-xl font-bold text-white">Datos de la Tienda y Ticket</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Nombre del Negocio</label>
+              <input
+                type="text"
+                value={localStoreName}
+                onChange={(e) => setLocalStoreName(e.target.value)}
+                placeholder="Ej. Abarrotes Don Pepe"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Teléfono (Opcional)</label>
+              <input
+                type="text"
+                value={localStorePhone}
+                onChange={(e) => setLocalStorePhone(e.target.value)}
+                placeholder="Ej. 555-123-4567"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Dirección o Mensaje en el Ticket</label>
+              <input
+                type="text"
+                value={localStoreAddress}
+                onChange={(e) => setLocalStoreAddress(e.target.value)}
+                placeholder="Ej. Av. Principal #123, ¡Gracias por su compra!"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Sección de Impuestos */}
+        <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+            <SettingsIcon className="h-6 w-6 text-amber-400" />
+            <h2 className="text-xl font-bold text-white">Impuestos y Finanzas</h2>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Tasa de Impuesto / IVA (%)</label>
+            <div className="relative max-w-xs">
+              <input
+                type="number"
+                value={localTaxRate}
+                onChange={(e) => setLocalTaxRate(e.target.value)}
+                placeholder="0"
+                min="0"
+                max="100"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-amber-500 transition-colors"
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+            </div>
+            <p className="text-slate-500 text-sm mt-2">Este porcentaje se usará para calcular el desglose de impuestos en reportes y tickets futuros.</p>
+          </div>
+        </section>
         {/* Sección de Impresoras */}
         <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
@@ -70,7 +148,7 @@ export default function Settings() {
                   <select 
                     value={defaultPrinter} 
                     onChange={(e) => setDefaultPrinter(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg py-3 px-4 text-white focus:outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                   >
                     <option value="">-- Usar diálogo de impresión estándar --</option>
                     {printers.map(p => (
@@ -100,12 +178,12 @@ export default function Settings() {
                   checked={scannerEnabled}
                   onChange={(e) => setScannerEnabled(e.target.checked)}
                 />
-                <div className={`w-14 h-7 rounded-full transition-colors flex items-center ${scannerEnabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                <div className={`w-14 h-7 rounded-full transition-colors flex items-center ${scannerEnabled ? 'bg-slate-500' : 'bg-slate-700'}`}>
                   <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${scannerEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
                 </div>
               </div>
               <div>
-                <span className="text-white font-medium block mb-1 group-hover:text-emerald-400 transition-colors">Habilitar Escaneo Automático (Recomendado)</span>
+                <span className="text-white font-medium block mb-1 group-hover:text-slate-400 transition-colors">Habilitar Escaneo Automático (Recomendado)</span>
                 <p className="text-slate-400 text-sm">Permite que el sistema detecte disparos rápidos del lector en cualquier momento (Punto de Venta o Compras) y procese el código de inmediato, sin importar dónde esté el cursor.</p>
               </div>
             </label>
@@ -115,7 +193,7 @@ export default function Settings() {
               <input 
                 type="text" 
                 placeholder="Haz clic aquí y escanea un producto para probar..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-emerald-400 font-mono text-center focus:outline-none focus:border-purple-500"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-slate-400 font-mono text-center focus:outline-none focus:border-purple-500"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     alert(`¡Lectura exitosa! Código: ${e.currentTarget.value}`);
@@ -128,11 +206,43 @@ export default function Settings() {
           </div>
         </section>
 
+        {/* Sección de Apariencia */}
+        <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+            <Palette className="h-6 w-6 text-pink-400" />
+            <h2 className="text-xl font-bold text-white">Apariencia del Sistema</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={() => setTheme('dark')}
+              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${theme === 'dark' ? 'border-slate-500 bg-slate-500/10' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}`}
+            >
+              <div className="w-full h-16 bg-slate-900 rounded-md border border-slate-700 flex items-center justify-center text-white font-medium">Oscuro</div>
+              <span className="font-bold text-white">Modo Nocturno</span>
+            </button>
+            <button
+              onClick={() => setTheme('light')}
+              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${theme === 'light' ? 'border-slate-500 bg-slate-500/10' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}`}
+            >
+              <div className="w-full h-16 bg-[#f1f5f9] rounded-md border border-slate-300 flex items-center justify-center text-slate-900 font-medium">Claro</div>
+              <span className="font-bold text-white">Modo Claro</span>
+            </button>
+            <button
+              onClick={() => setTheme('blue')}
+              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${theme === 'blue' ? 'border-slate-500 bg-slate-500/10' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}`}
+            >
+              <div className="w-full h-16 bg-blue-900 rounded-md border border-blue-700 flex items-center justify-center text-white font-medium">Azul</div>
+              <span className="font-bold text-white">Modo Azul</span>
+            </button>
+          </div>
+        </section>
+
         {/* Botón de Guardado (Visual, ya que Zustand guarda automáticamente) */}
         <div className="flex justify-end pt-4">
           <button 
             onClick={handleSave}
-            className="bg-emerald-500 hover:bg-emerald-400 text-white font-medium py-3 px-8 rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2"
+            className="bg-slate-500 hover:bg-slate-400 text-white font-medium py-3 px-8 rounded-xl shadow-lg shadow-slate-500/20 transition-all flex items-center gap-2"
           >
             {saved ? <Check className="h-5 w-5" /> : <Save className="h-5 w-5" />}
             {saved ? 'Guardado' : 'Guardar Preferencias'}

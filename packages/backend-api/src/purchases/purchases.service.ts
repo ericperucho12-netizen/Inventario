@@ -10,20 +10,23 @@ import { Supplier } from '../suppliers/entities/supplier.entity.js';
 export class PurchasesService {
   constructor(private dataSource: DataSource) {}
 
-  async create(createPurchaseDto: CreatePurchaseDto, userId: string) {
+  async create(createPurchaseDto: CreatePurchaseDto, userId: string, companyId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const supplier = await queryRunner.manager.findOneBy(Supplier, { id: createPurchaseDto.supplierId, isActive: true });
-      if (!supplier) throw new NotFoundException('Proveedor no encontrado');
+      let supplier = null;
+      if (createPurchaseDto.supplierId) {
+        supplier = await queryRunner.manager.findOneBy(Supplier, { id: createPurchaseDto.supplierId, isActive: true, companyId });
+        if (!supplier) throw new NotFoundException('Proveedor no encontrado');
+      }
 
       let total = 0;
       const details = [];
 
       for (const item of createPurchaseDto.items) {
-        const product = await queryRunner.manager.findOneBy(Product, { id: item.productId });
+        const product = await queryRunner.manager.findOneBy(Product, { id: item.productId, companyId });
         if (!product) throw new BadRequestException(`Producto ${item.productId} no encontrado`);
 
         // Actualizar Stock y Costo
@@ -50,7 +53,10 @@ export class PurchasesService {
       }
 
       const purchase = new Purchase();
-      purchase.supplierId = supplier.id;
+      purchase.companyId = companyId;
+      if (supplier) {
+        purchase.supplierId = supplier.id;
+      }
       purchase.total = total;
       purchase.userId = userId;
       purchase.details = details;
@@ -67,16 +73,17 @@ export class PurchasesService {
     }
   }
 
-  findAll() {
+  findAll(companyId: string) {
     return this.dataSource.manager.find(Purchase, { 
+      where: { companyId },
       relations: ['supplier', 'details', 'details.product'],
       order: { createdAt: 'DESC' }
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, companyId: string) {
     const purchase = await this.dataSource.manager.findOne(Purchase, {
-      where: { id },
+      where: { id, companyId },
       relations: ['supplier', 'details', 'details.product']
     });
     if (!purchase) throw new NotFoundException('Compra no encontrada');

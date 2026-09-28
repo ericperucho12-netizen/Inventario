@@ -31,10 +31,7 @@ export default function Dashboard() {
             <Package className="h-5 w-5" />
             <span className="font-medium">Catálogo</span>
           </button>
-          <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
-            <Users className="h-5 w-5" />
-            <span className="font-medium">Clientes</span>
-          </button>
+
           <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
             <Settings className="h-5 w-5" />
             <span className="font-medium">Configuración</span>

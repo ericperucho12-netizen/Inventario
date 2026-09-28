@@ -16,6 +16,7 @@ export default function History() {
   const [printPurchaseData, setPrintPurchaseData] = useState<any>(null);
   const [showSalesModal, setShowSalesModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  
 
   const fetchSales = async () => {
     setLoading(true);
@@ -160,7 +161,7 @@ export default function History() {
         <button 
           onClick={() => setActiveTab('sales')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'sales' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+            activeTab === 'sales' ? 'bg-blue-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
           }`}
         >
           Ventas (Últimos 7 días)
@@ -168,7 +169,7 @@ export default function History() {
         <button 
           onClick={() => setActiveTab('purchases')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeTab === 'purchases' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+            activeTab === 'purchases' ? 'bg-blue-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
           }`}
         >
           Compras a Proveedores
@@ -178,7 +179,7 @@ export default function History() {
       <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm flex-1 flex flex-col overflow-hidden">
         {loading ? (
           <div className="flex-1 flex justify-center items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
           </div>
         ) : activeTab === 'sales' ? (
           <div className="flex-1 overflow-auto custom-scrollbar">
@@ -194,7 +195,7 @@ export default function History() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {sales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-white/5 transition-colors">
+                  <tr key={sale.id} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => handlePrint(sale)}>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-white">{new Date(sale.createdAt).toLocaleDateString()}</span>
@@ -213,7 +214,7 @@ export default function History() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        sale.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                        sale.status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-400' : 'bg-red-500/20 text-red-400'
                       }`}>
                         {sale.status === 'COMPLETED' ? 'COMPLETADA' : 'DEVUELTA'}
                       </span>
@@ -223,9 +224,9 @@ export default function History() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button 
-                        onClick={() => handlePrint(sale)}
+                        onClick={(e) => { e.stopPropagation(); handlePrint(sale); }}
                         className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-                        title="Reimprimir Ticket"
+                        title="Ver Ticket"
                       >
                         <Printer className="h-4 w-4" />
                       </button>
@@ -255,7 +256,7 @@ export default function History() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {purchases.map((purchase) => (
-                  <tr key={purchase.id} className="hover:bg-white/5 transition-colors">
+                  <tr key={purchase.id} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => handlePrintPurchase(purchase)}>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1">
                         <span className="font-medium text-white">{new Date(purchase.createdAt).toLocaleDateString()}</span>
@@ -264,7 +265,7 @@ export default function History() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-medium text-blue-400">{purchase.supplier?.name || 'Proveedor Eliminado'}</span>
+                        <span className="font-medium text-blue-400">{purchase.supplier?.name || 'Compra Independiente'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right font-bold text-white">
@@ -272,9 +273,9 @@ export default function History() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <button 
-                        onClick={() => handlePrintPurchase(purchase)}
-                        className="p-2 rounded-lg bg-blue-500/10 text-blue-400 hover:text-white hover:bg-blue-500 transition-colors"
-                        title="Reimprimir Ticket de Compra"
+                        onClick={(e) => { e.stopPropagation(); handlePrintPurchase(purchase); }}
+                        className="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                        title="Ver Ticket de Compra"
                       >
                         <Printer className="h-4 w-4" />
                       </button>
@@ -299,7 +300,7 @@ export default function History() {
         {printTicketData && (
           <div className="bg-white text-black p-6 w-[300px] text-xs font-mono" ref={ticketRef}>
             <div className="text-center mb-4">
-              <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
+              <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
               <p>*** COPIA DE TICKET ***</p>
               {printTicketData.isCredit && <p className="font-bold mt-1">*** VENTA A CRÉDITO ***</p>}
             </div>
@@ -347,7 +348,7 @@ export default function History() {
             <div className="flex-1 overflow-y-auto mb-6 custom-scrollbar bg-white rounded p-4" ref={ticketRef}>
               <div className="text-black font-mono text-xs">
                 <div className="text-center mb-4">
-                  <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
+                  <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
                   <p>Ticket (Copia)</p>
                   <p>{new Date(printTicketData.createdAt).toLocaleString()}</p>
                 </div>
@@ -376,7 +377,7 @@ export default function History() {
             </div>
             <button 
               onClick={printTicket}
-              className="w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-500/25"
+              className="w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-400 text-white shadow-lg shadow-blue-500/25"
             >
               <Printer className="h-5 w-5" /> Imprimir Copia
             </button>
@@ -398,10 +399,10 @@ export default function History() {
             <div className="flex-1 overflow-y-auto mb-6 custom-scrollbar bg-white rounded p-4" ref={purchaseTicketRef}>
               <div className="text-black font-mono text-xs">
                 <div className="text-center mb-4">
-                  <h1 className="font-bold text-base mb-1">Abarrotes PeruchOS</h1>
+                  <h1 className="font-bold text-base mb-1">PeruchOS System</h1>
                   <p>*** COPIA TICKET DE ENTRADA ***</p>
                   <p>Fecha Original: {new Date(printPurchaseData.createdAt).toLocaleString()}</p>
-                  <p>Proveedor: {printPurchaseData.supplier?.name}</p>
+                  <p>Proveedor: {printPurchaseData.supplier?.name || 'Compra Independiente'}</p>
                 </div>
                 <table className="w-full mb-4 border-collapse">
                   <thead>

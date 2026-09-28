@@ -10,16 +10,16 @@ export class PurchasesController {
 
   @Post()
   create(@Body() createPurchaseDto: CreatePurchaseDto, @Request() req: any) {
-    return this.purchasesService.create(createPurchaseDto, req.user.id);
+    return this.purchasesService.create(createPurchaseDto, req.user.userId, req.user.companyId);
   }
 
   @Get()
-  findAll() {
-    return this.purchasesService.findAll();
+  findAll(@Request() req: any) {
+    return this.purchasesService.findAll(req.user.companyId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.purchasesService.findOne(id);
+  findOne(@Request() req: any, @Param('id') id: string) {
+    return this.purchasesService.findOne(id, req.user.companyId);
   }
 }

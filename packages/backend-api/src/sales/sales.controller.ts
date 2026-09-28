@@ -12,21 +12,21 @@ export class SalesController {
   create(@Body() createSaleDto: CreateSaleDto, @Request() req: any) {
     // req.user contains the decoded JWT token payload
     const userId = req.user.userId;
-    return this.salesService.create(createSaleDto, userId);
+    return this.salesService.create(createSaleDto, userId, req.user.companyId);
   }
 
   @Get()
-  findAll(@Query('days') days?: number) {
-    return this.salesService.findAll(days);
+  findAll(@Request() req: any, @Query('days') days?: number) {
+    return this.salesService.findAll(req.user.companyId, days);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.salesService.findOne(id);
+  findOne(@Request() req: any, @Param('id') id: string) {
+    return this.salesService.findOne(id, req.user.companyId);
   }
 
   @Post(':id/refund')
-  refund(@Param('id') id: string) {
-    return this.salesService.refund(id);
+  refund(@Request() req: any, @Param('id') id: string) {
+    return this.salesService.refund(id, req.user.companyId);
   }
 }

@@ -29,3 +29,48 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+[data-theme='blue'] {
+  --color-slate-950: #0a0f24;
+  --color-slate-900: #1e3a8a;
+  --color-slate-800: #1e40af;
+  --color-slate-700: #1d4ed8;
+  --color-slate-400: #93c5fd;
+  --color-slate-300: #bfdbfe;
+  --color-background-dark: #0a0f24;
+  --color-surface-dark: #1e40af;
+}
+
+[data-theme='light'] {
+  --color-slate-950: #f1f5f9;
+  --color-slate-900: #ffffff;
+  --color-slate-800: #f8fafc;
+  --color-slate-700: #e2e8f0;
+  --color-slate-500: #64748b;
+  --color-slate-400: #475569;
+  --color-slate-300: #1e293b;
+  --color-background-dark: #f1f5f9;
+  --color-surface-dark: #cbd5e1;
+  --color-white: #0f172a;
+}
+
+[data-theme='light'] body {
+  color: #0f172a;
+  background-color: var(--color-background-dark);
+}
+
+[data-theme='light'] .text-white {
+  color: #0f172a;
+}
+
+[data-theme='light'] button.bg-emerald-500,
+[data-theme='light'] button.bg-emerald-500 *,
+[data-theme='light'] button.bg-red-500,
+[data-theme='light'] button.bg-red-500 *,
+[data-theme='light'] button.bg-blue-500,
+[data-theme='light'] button.bg-blue-500 *,
+[data-theme='light'] .bg-emerald-500,
+[data-theme='light'] .bg-red-500,
+[data-theme='light'] .bg-blue-500 {
+  color: #ffffff !important;
+}

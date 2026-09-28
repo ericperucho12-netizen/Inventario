@@ -11,21 +11,21 @@ export class CashShiftsController {
 
   @Post('open')
   open(@Body() createCashShiftDto: CreateCashShiftDto, @Request() req: any) {
-    return this.cashShiftsService.open(createCashShiftDto, req.user.userId);
+    return this.cashShiftsService.open(createCashShiftDto, req.user.userId, req.user.companyId);
   }
 
   @Post('close')
   close(@Body() closeCashShiftDto: CloseCashShiftDto, @Request() req: any) {
-    return this.cashShiftsService.close(closeCashShiftDto, req.user.userId);
+    return this.cashShiftsService.close(closeCashShiftDto, req.user.userId, req.user.companyId);
   }
 
   @Get('current')
-  getCurrent() {
-    return this.cashShiftsService.getCurrent();
+  getCurrent(@Request() req: any) {
+    return this.cashShiftsService.getCurrent(req.user.companyId);
   }
 
   @Get('metrics')
-  getMetrics() {
-    return this.cashShiftsService.getMetrics();
+  getMetrics(@Request() req: any) {
+    return this.cashShiftsService.getMetrics(req.user.companyId);
   }
 }

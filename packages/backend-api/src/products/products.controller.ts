@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Patch, Request } from '@nestjs/common';
 import { ProductsService } from './products.service.js';
 import { Product } from './entities/product.entity.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -9,27 +9,27 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  create(@Body() createProductDto: Partial<Product>) {
-    return this.productsService.create(createProductDto);
+  create(@Request() req: any, @Body() createProductDto: Partial<Product>) {
+    return this.productsService.create({ ...createProductDto, companyId: req.user.companyId }, req.user.companyId);
   }
 
   @Get()
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Request() req: any) {
+    return this.productsService.findAll(req.user.companyId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id);
+  findOne(@Request() req: any, @Param('id') id: string) {
+    return this.productsService.findOne(id, req.user.companyId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProductDto: Partial<Product>) {
-    return this.productsService.update(id, updateProductDto);
+  update(@Request() req: any, @Param('id') id: string, @Body() updateProductDto: Partial<Product>) {
+    return this.productsService.update(id, updateProductDto, req.user.companyId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.productsService.deactivate(id);
+  remove(@Request() req: any, @Param('id') id: string) {
+    return this.productsService.deactivate(id, req.user.companyId);
   }
 }

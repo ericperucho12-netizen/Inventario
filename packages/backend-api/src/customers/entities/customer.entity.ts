@@ -1,7 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Company } from '../../companies/entities/company.entity.js';
 
 @Entity('customers')
 export class Customer {
+  @Column({ nullable: true }) // TODO: Change to false when forcing multi-tenant
+  companyId: string;
+
+  @ManyToOne(() => Company)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

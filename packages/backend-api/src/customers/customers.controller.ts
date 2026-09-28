@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { CustomersService } from './customers.service.js';
 import { Customer } from './entities/customer.entity.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -9,37 +9,37 @@ export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
 
   @Post()
-  create(@Body() createCustomerDto: Partial<Customer>) {
-    return this.customersService.create(createCustomerDto);
+  create(@Request() req: any, @Body() createCustomerDto: Partial<Customer>) {
+    return this.customersService.create(createCustomerDto, req.user.companyId);
   }
 
   @Get()
-  findAll() {
-    return this.customersService.findAll();
+  findAll(@Request() req: any) {
+    return this.customersService.findAll(req.user.companyId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(id);
+  findOne(@Request() req: any, @Param('id') id: string) {
+    return this.customersService.findOne(id, req.user.companyId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCustomerDto: Partial<Customer>) {
-    return this.customersService.update(id, updateCustomerDto);
+  update(@Request() req: any, @Param('id') id: string, @Body() updateCustomerDto: Partial<Customer>) {
+    return this.customersService.update(id, updateCustomerDto, req.user.companyId);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.customersService.deactivate(id);
+  remove(@Request() req: any, @Param('id') id: string) {
+    return this.customersService.deactivate(id, req.user.companyId);
   }
 
   @Post(':id/pay-debt')
-  payDebt(@Param('id') id: string, @Body('amount') amount: number) {
-    return this.customersService.payDebt(id, amount);
+  payDebt(@Request() req: any, @Param('id') id: string, @Body('amount') amount: number) {
+    return this.customersService.payDebt(id, amount, req.user.companyId);
   }
 
   @Get(':id/credit-sales')
-  getCreditSales(@Param('id') id: string) {
-    return this.customersService.getCreditSales(id);
+  getCreditSales(@Request() req: any, @Param('id') id: string) {
+    return this.customersService.getCreditSales(id, req.user.companyId);
   }
 }

@@ -1,9 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import type { SaleDetail } from './sale-detail.entity.js';
 import { Customer } from '../../customers/entities/customer.entity.js';
+import { Company } from '../../companies/entities/company.entity.js';
 
 @Entity('sales')
 export class Sale {
+  @Column({ nullable: true }) // TODO: Change to false when forcing multi-tenant
+  companyId: string;
+
+  @ManyToOne(() => Company)
+  @JoinColumn({ name: 'companyId' })
+  company: Company;
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -24,6 +32,12 @@ export class Sale {
 
   @Column({ default: false })
   isCredit: boolean;
+
+  @Column({ default: false })
+  isCreditPaid: boolean;
+
+  @Column({ default: 'CASH' })
+  paymentMethod: string; // CASH, CARD, TRANSFER
 
   @ManyToOne(() => Customer, { nullable: true })
   customer: Customer;
