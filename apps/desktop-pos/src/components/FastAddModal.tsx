@@ -39,7 +39,8 @@ export function FastAddModal({ fastAddData, setFastAddData, categories, supplier
         sellingPrice: Number(fastAddData.sellingPrice),
         stock: 0, // El stock inicial se registrará como una Compra, no directamente en el producto
         categoryId: fastAddData.categoryId,
-        imageUrl: fastAddData.imageUrl
+        imageUrl: fastAddData.imageUrl,
+        isBulk: fastAddData.isBulk || false
       };
       
       const res = await api.post('/products', payload);
@@ -113,8 +114,8 @@ export function FastAddModal({ fastAddData, setFastAddData, categories, supplier
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="mb-1 block text-sm font-medium text-slate-300">Stock Inicial</label>
-              <input required type="number" min="0" value={fastAddData.stock} onChange={e => setFastAddData({...fastAddData, stock: e.target.value})} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none text-white" />
+              <label className="mb-1 block text-sm font-medium text-slate-300">Stock Inicial {fastAddData.isBulk ? '(Kg)' : '(Pzas)'}</label>
+              <input required type="number" step={fastAddData.isBulk ? "0.001" : "1"} min="0" value={fastAddData.stock} onChange={e => setFastAddData({...fastAddData, stock: e.target.value})} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-emerald-500 focus:outline-none text-white" />
             </div>
             <div className="flex-1">
               <label className="mb-1 block text-sm font-medium text-slate-300">Categoría</label>
@@ -125,6 +126,12 @@ export function FastAddModal({ fastAddData, setFastAddData, categories, supplier
                 ))}
               </select>
             </div>
+          </div>
+          <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+            <label className="flex items-center gap-3 text-sm font-medium text-slate-300 cursor-pointer">
+              <input type="checkbox" checked={fastAddData.isBulk || false} onChange={e => setFastAddData({...fastAddData, isBulk: e.target.checked})} className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-slate-900" />
+              ¿Se vende a granel/pesado? (Frutas, verduras, carnes)
+            </label>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-300">Proveedor (Opcional)</label>

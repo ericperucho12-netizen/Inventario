@@ -18,6 +18,7 @@ interface Product {
   costPrice: number;
   stock: number;
   category?: { id: string; name: string };
+  isBulk?: boolean;
 }
 
 interface Supplier {
@@ -164,7 +165,8 @@ export default function Purchases() {
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.product.id === productId) {
-        return { ...item, quantity: Math.max(1, item.quantity + delta) };
+        const newQuantity = Math.max(0.001, item.quantity + delta);
+        return { ...item, quantity: Number(newQuantity.toFixed(3)) };
       }
       return item;
     }));
@@ -506,14 +508,15 @@ export default function Purchases() {
                       </button>
                       <input 
                         type="number"
-                        min="1"
+                        step={item.product.isBulk ? "0.001" : "1"}
+                        min={item.product.isBulk ? "0.001" : "1"}
                         value={item.quantity || ''}
                         onChange={(e) => {
                           const val = e.target.value;
-                          setAbsoluteQuantity(item.product.id, val === '' ? 0 : parseInt(val));
+                          setAbsoluteQuantity(item.product.id, val === '' ? 0 : parseFloat(val));
                         }}
                         onBlur={() => {
-                          if (!item.quantity) setAbsoluteQuantity(item.product.id, 1);
+                          if (!item.quantity) setAbsoluteQuantity(item.product.id, item.product.isBulk ? 0.001 : 1);
                         }}
                         className="w-full bg-transparent font-semibold text-sm text-center text-white focus:outline-none"
                       />

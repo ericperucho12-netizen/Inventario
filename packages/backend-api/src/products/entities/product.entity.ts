@@ -30,8 +30,11 @@ export class Product {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 3, default: 0 })
   stock: number;
+
+  @Column({ default: false })
+  isBulk: boolean;
 
   @Column({ nullable: true })
   imageUrl: string;

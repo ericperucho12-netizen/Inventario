@@ -18,6 +18,7 @@ interface Product {
   stock: number;
   category: Category;
   imageUrl?: string;
+  isBulk?: boolean;
 }
 
 export default function Catalog() {
@@ -44,6 +45,7 @@ export default function Catalog() {
   const [prodStock, setProdStock] = useState('0');
   const [prodCatId, setProdCatId] = useState('');
   const [prodImageUrl, setProdImageUrl] = useState('');
+  const [prodIsBulk, setProdIsBulk] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -68,6 +70,7 @@ export default function Catalog() {
       setProdStock('0');
       setProdCatId('');
       setProdImageUrl('');
+      setProdIsBulk(false);
     } else {
       setCatName('');
       setCatDesc('');
@@ -84,6 +87,7 @@ export default function Catalog() {
     setProdStock(prod.stock?.toString() || '0');
     setProdCatId(prod.category?.id || '');
     setProdImageUrl(prod.imageUrl || '');
+    setProdIsBulk(prod.isBulk || false);
     setIsModalOpen(true);
   };
 
@@ -134,7 +138,8 @@ export default function Catalog() {
         sellingPrice: Number(prodPrice),
         stock: Number(prodStock),
         categoryId: prodCatId,
-        imageUrl: prodImageUrl || null
+        imageUrl: prodImageUrl || null,
+        isBulk: prodIsBulk
       };
       
       if (editingProduct) {
@@ -383,8 +388,14 @@ export default function Catalog() {
                     </div>
                   </div>
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-300">Stock Actual</label>
-                    <input required type="number" step="1" value={prodStock} onChange={e => setProdStock(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none" />
+                    <label className="mb-1 block text-sm font-medium text-slate-300">Stock Actual {prodIsBulk ? '(Kg)' : '(Pzas)'}</label>
+                    <input required type="number" step={prodIsBulk ? "0.001" : "1"} value={prodStock} onChange={e => setProdStock(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none" />
+                  </div>
+                  <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                    <label className="flex items-center gap-3 text-sm font-medium text-slate-300 cursor-pointer">
+                      <input type="checkbox" checked={prodIsBulk} onChange={e => setProdIsBulk(e.target.checked)} className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-slate-900" />
+                      ¿Se vende a granel/pesado? (Frutas, verduras, carnes)
+                    </label>
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Categoría</label>
