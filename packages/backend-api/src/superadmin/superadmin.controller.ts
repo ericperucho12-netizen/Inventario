@@ -34,9 +34,23 @@ export class SuperadminController {
   @Get('companies')
   async getCompanies(@Request() req: any) {
     this.ensureSuperAdmin(req);
-    return this.companyRepository.find({
+    const companies = await this.companyRepository.find({
       order: { createdAt: 'DESC' },
     });
+    
+    // Adjuntar la información del propietario y su suscripción
+    const result = [];
+    for (const company of companies) {
+      const owner = await this.userRepository.findOne({ 
+        where: { companyId: company.id, role: 'PROPIETARIO' as any },
+        select: ['id', 'username', 'fullName', 'isSubscribed', 'subscriptionPlan', 'nextBillingDate']
+      });
+      result.push({
+        ...company,
+        owner: owner || null
+      });
+    }
+    return result;
   }
 
   @Patch('companies/:id/status')
@@ -66,10 +80,27 @@ export class SuperadminController {
 
     await this.userRepository.update(owner.id, {
       isSubscribed: true,
-      subscriptionPlan: 'monthly' as any,
+      subscriptionPlan: months === 12 ? ('yearly' as any) : ('monthly' as any),
       nextBillingDate: newBillingDate,
     });
 
     return { success: true, newBillingDate };
+  }
+
+  @Patch('companies/:id/revoke-subscription')
+  async revokeSubscription(@Request() req: any, @Param('id') id: string) {
+    this.ensureSuperAdmin(req);
+    
+    // Buscar al dueño de la empresa (PROPIETARIO)
+    const owner = await this.userRepository.findOne({ where: { companyId: id, role: 'PROPIETARIO' as any } });
+    if (!owner) throw new ForbiddenException('No se encontró al propietario de la empresa');
+
+    await this.userRepository.update(owner.id, {
+      isSubscribed: false,
+      subscriptionPlan: null as any,
+      nextBillingDate: null as any,
+    });
+
+    return { success: true };
   }
 }
