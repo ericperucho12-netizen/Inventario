@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { Lock, Loader2, Check } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
+import { api } from '../lib/axios';
 
 // Use the exact publishable test key the user gave me
 const stripePromise = loadStripe('pk_test_51UK787FPIGc7tDgq1m1gsXewMcaz3CJWwKcBsEZ5yDMLMq0knuwP3YD4m5wK85LwY2nsZoY7Wl3K5HgCZ1k9GmMg00btTFnDJw');
@@ -47,14 +48,10 @@ function SetupForm({ selectedPlan }: { selectedPlan: 'monthly' | 'yearly' }) {
       }
 
       try {
-        await fetch(`http://localhost:3000/users/${user.id}/subscription`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            isSubscribed: true,
-            subscriptionPlan: selectedPlan,
-            nextBillingDate: newBillingDate.toISOString(),
-          })
+        await api.patch(`/users/${user.id}/subscription`, {
+          isSubscribed: true,
+          subscriptionPlan: selectedPlan,
+          nextBillingDate: newBillingDate.toISOString(),
         });
         
         if (token) {
@@ -112,12 +109,8 @@ export default function SubscriptionForm({ selectedPlan }: { selectedPlan: 'mont
 
   useEffect(() => {
     // Pedir al backend que prepare una intención de guardar la tarjeta (SetupIntent)
-    fetch('http://localhost:3000/stripe/create-setup-intent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    })
-      .then((res) => res.json())
-      .then((data) => setClientSecret(data.clientSecret))
+    api.post('/stripe/create-setup-intent')
+      .then((res) => setClientSecret(res.data.clientSecret))
       .catch((err) => console.error('Error fetching setup intent:', err));
   }, []);
 

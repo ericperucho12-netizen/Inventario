@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/auth.store';
 import { useSubscriptionStore } from '../store/subscription.store';
 import { CreditCard, Check, AlertCircle, X, User as UserIcon, Mail, Lock as LockIcon, Save } from 'lucide-react';
 import SubscriptionForm from '../components/SubscriptionForm';
+import { api } from '../lib/axios';
 
 export default function Profile() {
   const { user, setAuth, token } = useAuthStore();
@@ -46,15 +47,9 @@ export default function Profile() {
         updateData.passwordHash = password;
       }
 
-      const res = await fetch(`http://localhost:3000/users/${user?.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateData)
-      });
+      const res = await api.patch(`/users/${user?.id}`, updateData);
       
-      if (!res.ok) throw new Error('Error al actualizar');
-      
-      const updatedUser = await res.json();
+      const updatedUser = res.data;
       
       if (token) {
         setAuth({ ...user, ...updatedUser }, token);
@@ -77,14 +72,10 @@ export default function Profile() {
   const executeCancelSubscription = async () => {
     if (user) {
       try {
-        await fetch(`http://localhost:3000/users/${user.id}/subscription`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            isSubscribed: false,
-            subscriptionPlan: user.subscriptionPlan,
-            nextBillingDate: user.nextBillingDate, 
-          })
+        await api.patch(`/users/${user.id}/subscription`, {
+          isSubscribed: false,
+          subscriptionPlan: user.subscriptionPlan,
+          nextBillingDate: user.nextBillingDate, 
         });
         
         if (token) {
