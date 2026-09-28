@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Lock, Loader2, Check } from 'lucide-react';
+import { Lock, Loader2, Check, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/auth.store';
 import { api } from '../lib/axios';
 
@@ -106,13 +106,34 @@ function SetupForm({ selectedPlan }: { selectedPlan: 'monthly' | 'yearly' }) {
 
 export default function SubscriptionForm({ selectedPlan }: { selectedPlan: 'monthly' | 'yearly' }) {
   const [clientSecret, setClientSecret] = useState('');
+  const [initError, setInitError] = useState<string | null>(null);
 
   useEffect(() => {
     // Pedir al backend que prepare una intención de guardar la tarjeta (SetupIntent)
     api.post('/stripe/create-setup-intent')
-      .then((res) => setClientSecret(res.data.clientSecret))
-      .catch((err) => console.error('Error fetching setup intent:', err));
+      .then((res) => {
+        if (res.data.error) {
+          setInitError(res.data.error);
+        } else {
+          setClientSecret(res.data.clientSecret);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching setup intent:', err);
+        setInitError('Error de conexión con el servidor Stripe.');
+      });
   }, []);
+
+  if (initError) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 bg-red-950/20 rounded-xl border border-red-900/50">
+        <AlertCircle className="h-8 w-8 text-red-500 mb-2" />
+        <p className="text-red-400 font-bold text-center">Error al conectar con Stripe</p>
+        <p className="text-red-300/70 text-sm text-center mt-2 max-w-sm">{initError}</p>
+        <p className="text-slate-500 text-xs text-center mt-4 border-t border-red-900/30 pt-4">Asegúrate de haber configurado STRIPE_SECRET_KEY en Render.</p>
+      </div>
+    );
+  }
 
   if (!clientSecret) {
     return (
