@@ -205,17 +205,17 @@ export default function DashboardHome() {
       {/* ALERTA DE STOCK BAJO */}
       {lowStockList.length > 0 && (
         <div className="mb-6 p-4 rounded-2xl border border-red-500/30 bg-red-500/10 backdrop-blur-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/20 text-red-400 rounded-lg animate-pulse">
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-4">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="p-2 bg-red-500/20 text-red-400 rounded-lg animate-pulse shrink-0">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-bold text-red-400">¡Alerta! {lowStockList.length} producto(s) con stock bajo (≤ {lowStockThreshold})</h3>
-                <p className="text-xs text-slate-400">Considera reabastecer pronto para no quedarte sin mercancía.</p>
+                <h3 className="font-bold text-red-400 leading-tight">¡Alerta! {lowStockList.length} producto(s) con stock bajo (≤ {lowStockThreshold})</h3>
+                <p className="text-xs text-slate-400 mt-1">Considera reabastecer pronto.</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full xl:w-auto shrink-0 bg-slate-950/50 p-2 rounded-xl">
               <label className="text-xs text-slate-400 whitespace-nowrap">Límite de alerta:</label>
               <input
                 type="number"
@@ -225,10 +225,10 @@ export default function DashboardHome() {
                   const val = parseInt(e.target.value);
                   if (!isNaN(val) && val >= 0) setLowStockThreshold(val);
                 }}
-                className="w-16 bg-slate-950 border border-red-500/30 rounded-lg px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-red-500"
+                className="w-16 bg-slate-950 border border-red-500/30 rounded-lg px-2 py-1.5 text-white text-sm text-center focus:outline-none focus:border-red-500"
               />
-              <Link to="/purchases" className="bg-red-500 hover:bg-red-400 text-white text-sm font-bold py-2 px-4 rounded-xl transition-colors whitespace-nowrap">
-                + Reponer Stock
+              <Link to="/purchases" className="bg-red-500 hover:bg-red-400 text-white text-sm font-bold py-1.5 px-3 rounded-lg transition-colors whitespace-nowrap ml-auto sm:ml-0">
+                + Reponer
               </Link>
             </div>
           </div>

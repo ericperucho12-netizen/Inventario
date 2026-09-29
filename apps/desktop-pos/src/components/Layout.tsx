@@ -287,7 +287,7 @@ export default function Layout() {
       {/* Main Content (Dinámico según la ruta) */}
       <main className="flex-1 overflow-y-auto xl:overflow-hidden flex flex-col bg-slate-950 pt-14 md:pt-0 relative">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-900/10 via-slate-950 to-slate-950 pointer-events-none"></div>
-        <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out flex flex-col w-full z-10 relative">
+        <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out flex flex-col w-full z-10 relative overflow-y-auto">
           <Outlet />
         </div>
       </main>
