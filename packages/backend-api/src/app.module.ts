@@ -18,9 +18,15 @@ import { ExpensesModule } from './expenses/expenses.module.js';
 import { StripeModule } from './stripe/stripe.module.js';
 import { CompaniesModule } from './companies/companies.module.js';
 import { SuperadminModule } from './superadmin/superadmin.module.js';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minuto
+      limit: 100, // 100 peticiones por minuto por IP
+    }]),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot({
       type: 'postgres',
@@ -50,6 +56,12 @@ import { SuperadminModule } from './superadmin/superadmin.module.js';
     SuperadminModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard, // Habilita límite de peticiones (Prevención de ataques DDoS / Fuerza Bruta)
+    }
+  ],
 })
 export class AppModule {}
