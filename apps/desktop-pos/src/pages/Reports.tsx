@@ -4,8 +4,8 @@ import {
   BarChart3, Calendar, Download, Loader2, DollarSign, Package, TrendingUp
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportData {
   summary: {
@@ -134,7 +134,7 @@ export default function Reports() {
     doc.setFontSize(14);
     doc.text('Resumen General', 14, 40);
     
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 45,
       head: [['Métrica', 'Valor']],
       body: [
@@ -160,7 +160,7 @@ export default function Reports() {
       `$${(p.revenue - p.cost).toFixed(2)}`
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: currentY + 5,
       head: [['#', 'Producto', 'Cantidad', 'Ingreso', 'Utilidad']],
       body: topProductsBody.length > 0 ? topProductsBody : [['-', 'Sin ventas en este periodo', '-', '-', '-']],
