@@ -4,6 +4,8 @@ import {
   BarChart3, Calendar, Download, Loader2, DollarSign, Package, TrendingUp
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface ReportData {
   summary: {
@@ -116,6 +118,60 @@ export default function Reports() {
     XLSX.writeFile(wb, `Reporte_PeruchOS_${startDate}_al_${endDate}.xlsx`);
   };
 
+  const exportToPDF = () => {
+    if (!data) return;
+
+    const doc = new jsPDF();
+
+    // Título
+    doc.setFontSize(20);
+    doc.text('Reporte Financiero - PeruchOS', 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Periodo: ${startDate} al ${endDate}`, 14, 30);
+
+    // Resumen General
+    doc.setFontSize(14);
+    doc.text('Resumen General', 14, 40);
+    
+    (doc as any).autoTable({
+      startY: 45,
+      head: [['Métrica', 'Valor']],
+      body: [
+        ['Ventas Totales', `$${data.summary.totalRevenue.toFixed(2)}`],
+        ['Costo Total de Ventas', `$${data.summary.totalCost.toFixed(2)}`],
+        ['Utilidad Neta (Ganancia Libre)', `$${data.summary.netProfit.toFixed(2)}`],
+        ['Cantidad de Tickets Cobrados', data.summary.salesCount.toString()],
+      ],
+      theme: 'grid',
+      headStyles: { fillColor: [99, 102, 241] }
+    });
+
+    // Top Productos
+    const currentY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(14);
+    doc.text('Top Productos Más Vendidos', 14, currentY);
+
+    const topProductsBody = data.topProducts.map((p, i) => [
+      i + 1,
+      p.name,
+      p.quantity,
+      `$${p.revenue.toFixed(2)}`,
+      `$${(p.revenue - p.cost).toFixed(2)}`
+    ]);
+
+    (doc as any).autoTable({
+      startY: currentY + 5,
+      head: [['#', 'Producto', 'Cantidad', 'Ingreso', 'Utilidad']],
+      body: topProductsBody.length > 0 ? topProductsBody : [['-', 'Sin ventas en este periodo', '-', '-', '-']],
+      theme: 'striped',
+      headStyles: { fillColor: [244, 63, 94] }
+    });
+
+    // Guardar PDF
+    doc.save(`Reporte_PeruchOS_${startDate}_al_${endDate}.pdf`);
+  };
+
   return (
     <div className="p-8 h-full flex flex-col overflow-auto custom-scrollbar">
       <header className="mb-8 flex items-center justify-between">
@@ -177,13 +233,20 @@ export default function Reports() {
       {data && (
         <div className="animate-fade-in space-y-8">
           
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
+            <button 
+              onClick={exportToPDF}
+              className="bg-indigo-500 hover:bg-indigo-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-105"
+            >
+              <Download className="h-5 w-5" />
+              Descargar PDF
+            </button>
             <button 
               onClick={exportToExcel}
               className="bg-rose-500 hover:bg-rose-400 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-rose-500/20 transition-all transform hover:scale-105"
             >
               <Download className="h-5 w-5" />
-              Descargar Reporte en Excel (.xlsx)
+              Descargar Excel (.xlsx)
             </button>
           </div>
 
