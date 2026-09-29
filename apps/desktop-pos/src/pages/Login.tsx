@@ -4,7 +4,7 @@ import { getApiUrl } from '../lib/axios';
 import { useAuthStore } from '../store/auth.store';
 import { api } from '../lib/axios';
 import { useNavigate } from 'react-router-dom';
-import logoImg from '../assets/hallow.png';
+import logoImg from '../assets/logo.png';
 
 export default function Login() {
   const [username, setUsername] = useState('');
