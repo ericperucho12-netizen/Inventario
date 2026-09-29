@@ -9,10 +9,8 @@ async function bootstrap() {
   // 18. Cabeceras de seguridad
   app.use(helmet());
 
-  // 14. Valida entradas & 8. Bloquea manipulación de campos
+  // 14. Valida entradas
   app.useGlobalPipes(new ValidationPipe({ 
-    whitelist: true, // Remueve campos no definidos en los DTOs
-    forbidNonWhitelisted: true, // Lanza error si envían campos extra
     transform: true // Transforma automáticamente payloads a los tipos DTO
   }));
 
