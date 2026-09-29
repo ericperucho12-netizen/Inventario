@@ -100,14 +100,20 @@ export default function Login() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] font-sans selection:bg-indigo-500/30">
       
       {/* Background Animated Orbs for a premium feel */}
-      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-indigo-500/20 blur-[120px] animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-violet-600/10 blur-[150px] animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-orange-600/20 blur-[120px] animate-[pulse_4s_ease-in-out_infinite]" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-purple-700/20 blur-[150px] animate-[pulse_5s_ease-in-out_infinite]" style={{ animationDelay: '2s' }} />
 
       <div className="z-10 w-full max-w-md px-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
         
         {/* Greeting */}
         <div className="mb-10 flex flex-col items-center text-center">
-          <img src={logoImg} alt="Logo" className="h-32 object-contain mb-4 drop-shadow-2xl hover:scale-105 transition-transform" />
+          <img src={logoImg} alt="Logo" className="h-32 object-contain mb-2 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)] hover:scale-110 transition-transform animate-[bounce_3s_infinite]" />
+          
+          <h2 className="text-3xl font-black bg-gradient-to-r from-orange-500 via-amber-500 to-purple-500 bg-clip-text text-transparent leading-none drop-shadow-md tracking-tight animate-pulse">
+            PeruchOS
+          </h2>
+          <span className="text-xs text-orange-400/80 font-bold uppercase tracking-widest mt-1 mb-4">Operating System</span>
+
           <p className="text-base text-slate-400">{isRegistering ? 'Crea una nueva cuenta para tu negocio' : 'Ingresa a tu cuenta para continuar'}</p>
         </div>
 
@@ -127,7 +133,7 @@ export default function Login() {
             {/* Username Input */}
             <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'username' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
               <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-orange-500' : 'text-slate-500'}`} />
               </div>
               <div className="flex-1">
                 <input 
@@ -148,7 +154,7 @@ export default function Login() {
                 <div className="h-[1px] w-full bg-white/5 ml-12"></div>
                 <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'fullName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                    <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-orange-500' : 'text-slate-500'}`} />
                   </div>
                   <div className="flex-1">
                     <input 
@@ -166,7 +172,7 @@ export default function Login() {
                 <div className="h-[1px] w-full bg-white/5 ml-12"></div>
                 <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'companyName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                    <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                    <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-orange-500' : 'text-slate-500'}`} />
                   </div>
                   <div className="flex-1">
                     <input 
@@ -189,7 +195,7 @@ export default function Login() {
             {/* Password Input */}
             <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'password' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
               <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                <KeyRound className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <KeyRound className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-orange-500' : 'text-slate-500'}`} />
               </div>
               <div className="flex-1">
                 <input 
@@ -209,7 +215,7 @@ export default function Login() {
           {/* Mantener sesión iniciada Checkbox */}
           <div className="flex items-center justify-between px-2 pt-2">
             <label className="flex items-center gap-2 cursor-pointer group">
-              <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${keepSession ? 'border-indigo-500 bg-indigo-500' : 'border-slate-600 bg-white/[0.02] group-hover:border-indigo-400'}`}>
+              <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${keepSession ? 'border-orange-500 bg-orange-500' : 'border-slate-600 bg-white/[0.02] group-hover:border-orange-400'}`}>
                 {keepSession && <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
               </div>
               <input 
@@ -226,7 +232,7 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading || !username || !password}
-            className="group relative flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-500 py-4 font-bold text-white transition-all duration-300 hover:bg-indigo-400 hover:shadow-[0_0_30px_rgba(99,102,241,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-indigo-500 disabled:hover:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed overflow-hidden mt-8"
+            className="group relative flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-purple-600 py-4 font-bold text-white transition-all duration-300 hover:from-orange-400 hover:to-purple-500 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-purple-600 disabled:hover:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed overflow-hidden mt-8"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
             
@@ -246,7 +252,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => setIsRegistering(!isRegistering)}
-            className="block w-full text-indigo-400 text-sm font-medium hover:text-indigo-300 transition-colors"
+            className="block w-full text-orange-400 text-sm font-medium hover:text-orange-300 transition-colors"
           >
             {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Registra tu empresa'}
           </button>
@@ -265,7 +271,7 @@ export default function Login() {
         <div className="mt-8 flex justify-center">
           <button 
             onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-indigo-400 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
+            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-orange-400 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
           >
             <Settings className="h-4 w-4" />
             Configurar Conexión
@@ -282,7 +288,7 @@ export default function Login() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-slate-900/90 p-8 shadow-2xl backdrop-blur-md">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-indigo-400">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/20 text-orange-400">
                 <Server className="h-5 w-5" />
               </div>
               <h3 className="text-lg font-bold text-white">Servidor de Base de Datos</h3>

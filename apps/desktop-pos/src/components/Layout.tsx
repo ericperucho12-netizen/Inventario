@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useOfflineStore } from '../store/offline.store';
 import { api } from '../lib/axios';
 import { WifiOff, Wifi, Loader2 } from 'lucide-react';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/hallow.png';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -109,7 +109,9 @@ export default function Layout() {
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-14 bg-slate-900 border-b border-white/10 flex items-center justify-between px-4 z-40">
           <div className="flex items-center gap-3">
-            <img src={logoImg} alt="Logo" className="h-8 w-8 object-contain" />
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-[0_0_10px_rgba(249,115,22,0.5)]">
+              P
+            </div>
             <div className="flex flex-col">
               <h2 className="text-xl font-extrabold bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent leading-none drop-shadow-sm">
                 PeruchOS
@@ -147,8 +149,8 @@ export default function Layout() {
             </h2>
             <span className="text-[10px] text-orange-400/80 font-bold uppercase tracking-widest mt-1">Operating System</span>
           </div>
-          <div className="lg:hidden h-8 w-8 flex items-center justify-center">
-            <img src={logoImg} alt="Logo" className="h-full object-contain" />
+          <div className="lg:hidden h-8 w-8 rounded-lg bg-gradient-to-br from-orange-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-[0_0_10px_rgba(249,115,22,0.5)]">
+            P
           </div>
           <button onClick={closeMenu} className="md:hidden p-2 text-slate-400 hover:text-white bg-white/5 rounded-lg">
             <X className="h-5 w-5" />
@@ -283,8 +285,11 @@ export default function Layout() {
       </aside>
 
       {/* Main Content (Dinámico según la ruta) */}
-      <main className="flex-1 overflow-y-auto xl:overflow-hidden flex flex-col bg-slate-950 pt-14 md:pt-0">
-        <Outlet />
+      <main className="flex-1 overflow-y-auto xl:overflow-hidden flex flex-col bg-slate-950 pt-14 md:pt-0 relative">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-orange-900/10 via-slate-950 to-slate-950 pointer-events-none"></div>
+        <div className="flex-1 animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out flex flex-col w-full z-10 relative">
+          <Outlet />
+        </div>
       </main>
       </div>
 
