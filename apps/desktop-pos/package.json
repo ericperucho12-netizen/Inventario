@@ -23,7 +23,8 @@
       "main.js"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "public/favicon.png"
     }
   },
   "dependencies": {
