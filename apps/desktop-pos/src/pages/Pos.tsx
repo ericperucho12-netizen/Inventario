@@ -203,9 +203,51 @@ export default function Pos() {
   };
 
   const handleReadScale = async (productId: string) => {
-    // Si tuviéramos Web Bluetooth, aquí iría la lógica.
-    // Por ahora, le pedimos al usuario el peso exacto.
-    const weight = window.prompt("Ingresa el peso exacto leído por la báscula (ej. 1.250):", "1.000");
+    try {
+      if ('serial' in navigator) {
+        // Pedir al usuario que seleccione el puerto COM de la báscula
+        const port = await (navigator as any).serial.requestPort();
+        await port.open({ baudRate: 9600 }); // 9600 es el estándar en básculas Torrey/Rhino
+        
+        const reader = port.readable.getReader();
+        let accumulated = '';
+        
+        // Timeout de seguridad (5 segundos) si la báscula no envía datos
+        setTimeout(() => {
+          reader.cancel();
+        }, 5000);
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            reader.releaseLock();
+            break;
+          }
+          accumulated += new TextDecoder().decode(value);
+          
+          // Las básculas suelen enviar el peso terminado en salto de línea o "kg"
+          if (accumulated.includes('\\n') || accumulated.includes('\\r') || accumulated.includes('kg')) {
+            const match = accumulated.match(/([0-9]+\\.?[0-9]*)/); // Extraer los números
+            if (match) {
+              const weight = parseFloat(match[1]);
+              if (weight > 0) {
+                setExactQuantity(productId, weight);
+                reader.cancel(); // Terminar lectura
+                await port.close();
+                return;
+              }
+            }
+            accumulated = ''; 
+          }
+        }
+        await port.close();
+      }
+    } catch (error) {
+      console.warn('Fallo al leer puerto serial o no soportado, usando modo manual.', error);
+    }
+
+    // Modo Manual (Fallback) si no hay conexión o hubo error
+    const weight = window.prompt("No se detectó báscula o hubo un error. Ingresa el peso exacto leído (ej. 1.250):", "1.000");
     if (weight !== null) {
       const numWeight = parseFloat(weight);
       if (!isNaN(numWeight) && numWeight > 0) {
