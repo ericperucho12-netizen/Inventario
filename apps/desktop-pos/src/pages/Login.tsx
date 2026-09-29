@@ -106,16 +106,16 @@ export default function Login() {
       {/* Overlay to ensure contrast */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
 
-      <div className="z-10 w-full max-w-md px-8 py-10 rounded-2xl backdrop-blur-md bg-black/50 shadow-[0_0_20px_rgba(168,85,247,0.4)] border border-white/10 animate-in fade-in slide-in-from-bottom-8 duration-700 m-4">
+      <div className="z-10 w-full max-w-md px-6 py-8 animate-in fade-in slide-in-from-bottom-8 duration-700 m-4">
         
         {/* Greeting */}
         <div className="mb-10 flex flex-col items-center text-center">
           <img src={logoImg} alt="Logo" className="h-32 object-contain mb-2 drop-shadow-[0_0_15px_rgba(249,115,22,0.5)] hover:scale-110 transition-transform animate-[bounce_3s_infinite]" />
           
-          <h2 className="text-3xl font-black bg-gradient-to-r from-orange-500 via-amber-500 to-purple-500 bg-clip-text text-transparent leading-none drop-shadow-md tracking-tight animate-pulse">
+          <h2 className="text-3xl font-black bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent leading-none drop-shadow-md tracking-tight animate-pulse">
             PeruchOS
           </h2>
-          <span className="text-xs text-orange-400/80 font-bold uppercase tracking-widest mt-1 mb-4">Operating System</span>
+          <span className="text-xs text-orange-400 font-bold uppercase tracking-widest mt-1 mb-4">Operating System</span>
 
           <p className="text-base text-slate-400">{isRegistering ? 'Crea una nueva cuenta para tu negocio' : 'Ingresa a tu cuenta para continuar'}</p>
         </div>
@@ -127,99 +127,118 @@ export default function Login() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="space-y-4 relative">
-            {/* Username Input */}
-            <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'username' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                {/* Sombrero de bruja SVG */}
-                <svg className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-orange-500' : 'text-slate-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L7 17H17L12 2Z" />
-                  <path d="M3 17C3 17 8 20 12 20C16 20 21 17 21 17" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <input 
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onFocus={() => setFocusedInput('username')}
-                  onBlur={() => setFocusedInput(null)}
-                  className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
-                  placeholder="Usuario (email)"
-                  required
-                />
-              </div>
-            </div>
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div className="relative rounded-2xl p-[1px] bg-gradient-to-b from-orange-500 to-purple-600 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+            <div className="bg-[#1a1a24]/90 backdrop-blur-xl rounded-2xl p-2 relative overflow-hidden">
+              
+              {/* Spiderweb top left */}
+              <svg className="absolute top-0 left-0 w-16 h-16 text-white/10 pointer-events-none" viewBox="0 0 100 100" fill="currentColor">
+                <path d="M0,0 L100,0 C100,0 70,10 50,30 C30,50 0,100 0,100 L0,0 Z" />
+                <path d="M0,20 Q20,20 40,0 M0,40 Q40,40 60,0 M0,60 Q60,60 80,0" stroke="currentColor" strokeWidth="1" fill="none" />
+                <line x1="0" y1="0" x2="80" y2="80" stroke="currentColor" strokeWidth="1" />
+                <line x1="0" y1="0" x2="30" y2="90" stroke="currentColor" strokeWidth="1" />
+                <line x1="0" y1="0" x2="90" y2="30" stroke="currentColor" strokeWidth="1" />
+              </svg>
 
-            {isRegistering && (
-              <>
-                <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'fullName' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                    <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-orange-500' : 'text-slate-500'}`} />
+              {/* Spiderweb top right */}
+              <svg className="absolute top-0 right-0 w-16 h-16 text-white/10 pointer-events-none" style={{ transform: 'scaleX(-1)' }} viewBox="0 0 100 100" fill="currentColor">
+                <path d="M0,0 L100,0 C100,0 70,10 50,30 C30,50 0,100 0,100 L0,0 Z" />
+                <path d="M0,20 Q20,20 40,0 M0,40 Q40,40 60,0 M0,60 Q60,60 80,0" stroke="currentColor" strokeWidth="1" fill="none" />
+                <line x1="0" y1="0" x2="80" y2="80" stroke="currentColor" strokeWidth="1" />
+                <line x1="0" y1="0" x2="30" y2="90" stroke="currentColor" strokeWidth="1" />
+                <line x1="0" y1="0" x2="90" y2="30" stroke="currentColor" strokeWidth="1" />
+              </svg>
+
+              <div className="space-y-1 relative z-10">
+                {/* Username Input */}
+                <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
+                    🧙‍♀️
                   </div>
                   <div className="flex-1">
                     <input 
                       type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      onFocus={() => setFocusedInput('fullName')}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onFocus={() => setFocusedInput('username')}
                       onBlur={() => setFocusedInput(null)}
-                      className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
-                      placeholder="Nombre Completo"
-                      required={isRegistering}
+                      className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-400 focus:outline-none"
+                      placeholder="Usuario (email)"
+                      required
                     />
                   </div>
                 </div>
-                <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'companyName' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                    <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-orange-500' : 'text-slate-500'}`} />
-                  </div>
-                  <div className="flex-1">
-                    <input 
-                      type="text"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      onFocus={() => setFocusedInput('companyName')}
-                      onBlur={() => setFocusedInput(null)}
-                      className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
-                      placeholder="Nombre de tu Negocio/Empresa"
-                      required={isRegistering}
-                    />
-                  </div>
-                </div>
-              </>
-            )}
 
-            {/* Password Input */}
-            <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'password' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                {/* Llave antigua SVG */}
-                <svg className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-orange-500' : 'text-slate-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="7" cy="15" r="4" />
-                  <path d="M10.5 11.5L20 2v4l-3 3v3l-3 3" />
-                </svg>
+              {isRegistering && (
+                <>
+                  <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                  <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
+                      🧛‍♂️
+                    </div>
+                    <div className="flex-1">
+                      <input 
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        onFocus={() => setFocusedInput('fullName')}
+                        onBlur={() => setFocusedInput(null)}
+                        className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-400 focus:outline-none"
+                        placeholder="Nombre Completo"
+                        required={isRegistering}
+                      />
+                    </div>
+                  </div>
+                  <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                  <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
+                      🏪
+                    </div>
+                    <div className="flex-1">
+                      <input 
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        onFocus={() => setFocusedInput('companyName')}
+                        onBlur={() => setFocusedInput(null)}
+                        className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-400 focus:outline-none"
+                        placeholder="Nombre de tu Negocio/Empresa"
+                        required={isRegistering}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+              {/* Password Input */}
+              <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
+                  🗝️
+                </div>
+                <div className="flex-1">
+                  <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocusedInput('password')}
+                    onBlur={() => setFocusedInput(null)}
+                    className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-400 focus:outline-none tracking-widest"
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
               </div>
-              <div className="flex-1">
-                <input 
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setFocusedInput('password')}
-                  onBlur={() => setFocusedInput(null)}
-                  className="w-full bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none tracking-widest"
-                  placeholder="••••••••"
-                  required
-                />
               </div>
             </div>
           </div>
 
           {/* Mantener sesión iniciada Checkbox */}
-          <div className="flex items-center justify-between px-2 pt-2">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${keepSession ? 'border-orange-500 bg-orange-500' : 'border-slate-600 bg-white/[0.02] group-hover:border-orange-400'}`}>
-                {keepSession && <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+          <div className="flex items-center justify-start px-2 pt-2">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div className="flex items-center justify-center text-xl">
+                {keepSession ? '🎃' : <span className="w-5 h-5 border border-white/20 rounded"></span>}
               </div>
               <input 
                 type="checkbox" 
@@ -227,28 +246,34 @@ export default function Login() {
                 checked={keepSession} 
                 onChange={(e) => setKeepSession(e.target.checked)}
               />
-              <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">Mantener sesión iniciada</span>
+              <span className="text-sm text-slate-300 group-hover:text-white transition-colors">Mantener sesión iniciada</span>
             </label>
           </div>
 
           {/* Sign In Button */}
-          <button 
-            type="submit" 
-            disabled={loading || !username || !password}
-            className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-purple-600 py-4 font-bold text-white transition-all duration-300 hover:from-orange-400 hover:to-purple-500 hover:shadow-[0_0_15px_rgba(249,115,22,0.8)] active:scale-[0.98] disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-purple-600 disabled:hover:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed overflow-hidden mt-8"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+          <div className="relative rounded-2xl p-[2px] bg-gradient-to-r from-orange-500 to-purple-600 shadow-[0_0_20px_rgba(249,115,22,0.4)] mt-8 group">
+            {/* Bats on corners */}
+            <span className="absolute -top-3 -left-3 text-2xl animate-bounce" style={{ animationDuration: '2s' }}>🦇</span>
+            <span className="absolute -bottom-3 -right-3 text-2xl animate-bounce" style={{ animationDuration: '2.5s' }}>🦇</span>
             
-            {loading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <>
-                <Fingerprint className="h-5 w-5 opacity-80" />
-                <span>{isRegistering ? 'Crear Cuenta' : 'Ingresar'}</span>
-                <ChevronRight className="h-5 w-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-              </>
-            )}
-          </button>
+            <button 
+              type="submit" 
+              disabled={loading || !username || !password}
+              className="relative flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#5a1c3c] to-[#36154b] py-4 font-bold text-white transition-all duration-300 hover:from-[#6b2247] hover:to-[#461a61] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+              
+              {loading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <>
+                  <Fingerprint className="h-5 w-5 opacity-80" />
+                  <span>{isRegistering ? 'Crear Cuenta' : 'Ingresar'}</span>
+                  <ChevronRight className="h-5 w-5 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                </>
+              )}
+            </button>
+          </div>
         </form>
 
         <div className="mt-6 text-center space-y-3">
@@ -271,14 +296,9 @@ export default function Login() {
           )}
         </div>
 
-        <div className="mt-8 flex justify-center">
-          <button 
-            onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-orange-500 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
-          >
-            <Settings className="h-4 w-4" />
-            Configurar Conexión
-          </button>
+        <div className="mt-12 flex flex-col items-center justify-center gap-1">
+          <span className="text-xs text-white/30 font-medium tracking-widest">PERUCHOS POS v2.0</span>
+          <span className="text-xl animate-[bounce_4s_infinite]">🕷️</span>
         </div>
 
         <div className="mt-8 text-center text-xs text-slate-600 font-medium tracking-wider">
