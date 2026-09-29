@@ -163,13 +163,13 @@ export default function Pos() {
   const addToCart = (product: Product) => {
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id);
-      
       const currentQuantity = existing ? existing.quantity : 0;
-      // Eliminamos la restricción estricta de stock para permitir ventas en negativo
-      // if (currentQuantity + 1 > product.stock) {
-      //   alert(`No hay suficiente stock de ${product.description}`);
-      //   return prev;
-      // }
+      
+      if (currentQuantity + 1 > product.stock) {
+        setToastMessage(`❌ No hay suficiente stock de ${product.description}`);
+        setTimeout(() => setToastMessage(null), 3000);
+        return prev;
+      }
 
       if (existing) {
         return prev.map(item => 
@@ -185,8 +185,12 @@ export default function Pos() {
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.product.id === productId) {
-        // Permitir decimales en caso de productos pesados
         const newQuantity = Math.max(0.001, item.quantity + delta);
+        if (newQuantity > item.product.stock) {
+          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
+          setTimeout(() => setToastMessage(null), 3000);
+          return item;
+        }
         return { ...item, quantity: Number(newQuantity.toFixed(3)) };
       }
       return item;
@@ -196,6 +200,11 @@ export default function Pos() {
   const setExactQuantity = (productId: string, exactQty: number) => {
     setCart(prev => prev.map(item => {
       if (item.product.id === productId) {
+        if (exactQty > item.product.stock) {
+          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
+          setTimeout(() => setToastMessage(null), 3000);
+          return item;
+        }
         return { ...item, quantity: Math.max(0.001, exactQty) };
       }
       return item;
@@ -799,7 +808,7 @@ export default function Pos() {
       )}
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="absolute top-4 right-4 bg-emerald-500 text-white px-6 py-3 rounded-lg shadow-lg font-medium animate-fade-in z-50">
+        <div className={`absolute top-4 right-4 text-white px-6 py-3 rounded-lg shadow-lg font-medium animate-fade-in z-50 ${toastMessage.includes('❌') ? 'bg-rose-500 shadow-rose-500/20' : 'bg-emerald-500 shadow-emerald-500/20'}`}>
           {toastMessage}
         </div>
       )}
