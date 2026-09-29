@@ -22,7 +22,7 @@ import { Category } from '../categories/entities/category.entity.js';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'peruchos_super_secret_key_2026',
-        signOptions: { expiresIn: '10h' },
+        signOptions: { expiresIn: '30d' },
       }),
       inject: [ConfigService],
     }),
