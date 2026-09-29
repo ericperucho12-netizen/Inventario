@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { useOfflineStore } from '../store/offline.store';
 import { api } from '../lib/axios';
 import { WifiOff, Wifi, Loader2 } from 'lucide-react';
+import logoImg from '../assets/hallow.png';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();
@@ -108,15 +109,7 @@ export default function Layout() {
         {/* Mobile Header */}
         <div className="md:hidden absolute top-0 left-0 right-0 h-14 bg-slate-900 border-b border-white/10 flex items-center justify-between px-4 z-40">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-900">
-              P
-            </div>
-            <div className="flex flex-col">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent leading-none">
-                PeruchOS
-              </h2>
-              <span className="text-[10px] text-teal-500/70 font-medium uppercase tracking-widest mt-0.5">Operating System</span>
-            </div>
+            <img src={logoImg} alt="Logo" className="h-8 object-contain" />
           </div>
           <button 
             onClick={() => setIsMobileMenuOpen(true)}
@@ -142,14 +135,11 @@ export default function Layout() {
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
         <div className="p-4 lg:p-6 flex items-center justify-between lg:justify-start">
-          <div className="hidden lg:flex flex-col">
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent leading-none">
-              PeruchOS
-            </h2>
-            <span className="text-[10px] text-teal-500/70 font-medium uppercase tracking-widest mt-1">Operating System</span>
+          <div className="hidden lg:flex flex-col items-center w-full">
+            <img src={logoImg} alt="Logo" className="h-16 object-contain mb-2" />
           </div>
-          <div className="lg:hidden h-8 w-8 rounded-lg bg-gradient-to-r from-emerald-400 to-teal-500 flex items-center justify-center font-bold text-slate-900">
-            P
+          <div className="lg:hidden h-8 w-8 rounded-lg flex items-center justify-center font-bold text-slate-900">
+            <img src={logoImg} alt="Logo" className="h-full object-contain" />
           </div>
           <button onClick={closeMenu} className="md:hidden p-2 text-slate-400 hover:text-white bg-white/5 rounded-lg">
             <X className="h-5 w-5" />
