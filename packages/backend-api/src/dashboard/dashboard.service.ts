@@ -10,7 +10,7 @@ import { Expense } from '../expenses/entities/expense.entity.js';
 export class DashboardService {
   constructor(private dataSource: DataSource) {}
 
-  async getSummary(period: string = 'week') {
+  async getSummary(companyId: string, period: string = 'week') {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -21,6 +21,7 @@ export class DashboardService {
       .createQueryBuilder(Sale, 'sale')
       .select('SUM(sale.total)', 'total')
       .where('sale.createdAt >= :today', { today: today.toISOString() })
+      .andWhere('sale.companyId = :companyId', { companyId })
       .getRawOne();
     
     // Sales this month
@@ -28,6 +29,7 @@ export class DashboardService {
       .createQueryBuilder(Sale, 'sale')
       .select('SUM(sale.total)', 'total')
       .where('sale.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
+      .andWhere('sale.companyId = :companyId', { companyId })
       .getRawOne();
 
     // Purchases this month (Inversión/Gastos)
@@ -35,6 +37,7 @@ export class DashboardService {
       .createQueryBuilder(Purchase, 'purchase')
       .select('SUM(purchase.total)', 'total')
       .where('purchase.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
+      .andWhere('purchase.companyId = :companyId', { companyId })
       .getRawOne();
 
     // Expenses this month
@@ -42,6 +45,7 @@ export class DashboardService {
       .createQueryBuilder(Expense, 'expense')
       .select('SUM(expense.amount)', 'total')
       .where('expense.createdAt >= :firstDay', { firstDay: firstDayOfMonth.toISOString() })
+      .andWhere('expense.companyId = :companyId', { companyId })
       .getRawOne();
 
     // Profit this month (Utilidades)
@@ -49,17 +53,18 @@ export class DashboardService {
       SELECT SUM((sd."unitPrice" - sd."unitCost") * sd.quantity) as "totalProfit"
       FROM sale_details sd
       JOIN sales s ON s.id = sd."saleId"
-      WHERE s."createdAt" >= $1
-    `, [firstDayOfMonth.toISOString()]);
+      WHERE s."createdAt" >= $1 AND s."companyId" = $2
+    `, [firstDayOfMonth.toISOString(), companyId]);
 
     // Total Customers
-    const totalCustomers = await this.dataSource.manager.count(Customer, { where: { isActive: true } });
+    const totalCustomers = await this.dataSource.manager.count(Customer, { where: { isActive: true, companyId } });
 
     // Low stock products (<= 5)
     const lowStockProducts = await this.dataSource.manager
       .createQueryBuilder(Product, 'product')
       .where('product.stock <= 5')
       .andWhere('product.isActive = :active', { active: true })
+      .andWhere('product.companyId = :companyId', { companyId })
       .getCount();
 
     // Accounts Receivable (Total Debt from customers)
@@ -67,6 +72,7 @@ export class DashboardService {
       .createQueryBuilder(Customer, 'customer')
       .select('SUM(customer.debt)', 'total')
       .where('customer.isActive = :active', { active: true })
+      .andWhere('customer.companyId = :companyId', { companyId })
       .getRawOne();
 
     // Inventory Value
@@ -75,6 +81,7 @@ export class DashboardService {
       .select('SUM(product.stock * product."costPrice")', 'total')
       .where('product.isActive = :active', { active: true })
       .andWhere('product.stock > 0')
+      .andWhere('product.companyId = :companyId', { companyId })
       .getRawOne();
 
     // Chart data handling based on period
@@ -89,16 +96,19 @@ export class DashboardService {
     const recentSalesChart = await this.dataSource.manager
       .createQueryBuilder(Sale, 'sale')
       .where('sale.createdAt >= :date', { date: startDate.toISOString() })
+      .andWhere('sale.companyId = :companyId', { companyId })
       .getMany();
 
     const recentPurchasesChart = await this.dataSource.manager
       .createQueryBuilder(Purchase, 'purchase')
       .where('purchase.createdAt >= :date', { date: startDate.toISOString() })
+      .andWhere('purchase.companyId = :companyId', { companyId })
       .getMany();
 
     const recentExpensesChart = await this.dataSource.manager
       .createQueryBuilder(Expense, 'expense')
       .where('expense.createdAt >= :date', { date: startDate.toISOString() })
+      .andWhere('expense.companyId = :companyId', { companyId })
       .getMany();
 
     // Helper to get local date string YYYY-MM-DD
@@ -139,6 +149,7 @@ export class DashboardService {
 
     // Recent Sales
     const recentSales = await this.dataSource.manager.find(Sale, {
+      where: { companyId },
       relations: ['customer'],
       order: { createdAt: 'DESC' },
       take: 5
@@ -153,10 +164,12 @@ export class DashboardService {
         SUM((sd."unitPrice" - sd."unitCost") * sd.quantity) as profit 
       FROM sale_details sd
       JOIN products p ON p.id = sd."productId"
+      JOIN sales s ON s.id = sd."saleId"
+      WHERE s."companyId" = $1
       GROUP BY p.id, p.description
       ORDER BY "totalSold" DESC
       LIMIT 5
-    `);
+    `, [companyId]);
 
     return {
       todayTotal: parseFloat(salesTodayResult?.total || 0),
