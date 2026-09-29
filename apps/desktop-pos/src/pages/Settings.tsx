@@ -268,11 +268,11 @@ export default function Settings() {
               <span className="font-bold text-white">Modo Claro</span>
             </button>
             <button
-              onClick={() => setTheme('blue')}
-              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${theme === 'blue' ? 'border-slate-500 bg-slate-500/10' : 'border-slate-700 bg-slate-950 hover:border-slate-500'}`}
+              onClick={() => setTheme('halloween')}
+              className={`p-4 rounded-xl border-2 flex flex-col items-center gap-2 transition-all ${theme === 'halloween' ? 'border-orange-500 bg-orange-500/10' : 'border-slate-700 bg-slate-950 hover:border-orange-500/50'}`}
             >
-              <div className="w-full h-16 bg-blue-900 rounded-md border border-blue-700 flex items-center justify-center text-white font-medium">Azul</div>
-              <span className="font-bold text-white">Modo Azul</span>
+              <div className="w-full h-16 bg-purple-950 rounded-md border border-orange-500/50 flex items-center justify-center text-orange-400 font-bold">🎃 Hallow</div>
+              <span className="font-bold text-white">Halloween</span>
             </button>
           </div>
         </section>

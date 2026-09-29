@@ -30,15 +30,16 @@ body {
   background: #334155;
 }
 
-[data-theme='blue'] {
-  --color-slate-950: #0a0f24;
-  --color-slate-900: #1e3a8a;
-  --color-slate-800: #1e40af;
-  --color-slate-700: #1d4ed8;
-  --color-slate-400: #93c5fd;
-  --color-slate-300: #bfdbfe;
-  --color-background-dark: #0a0f24;
-  --color-surface-dark: #1e40af;
+[data-theme='halloween'] {
+  --color-slate-950: #0a0310;
+  --color-slate-900: #1a0b26;
+  --color-slate-800: #2d1142;
+  --color-slate-700: #3f185e;
+  --color-slate-500: #8b5cf6;
+  --color-slate-400: #f97316;
+  --color-slate-300: #fb923c;
+  --color-background-dark: #07020a;
+  --color-surface-dark: #1f0b2e;
 }
 
 [data-theme='light'] {

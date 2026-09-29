@@ -5,7 +5,7 @@ interface SettingsState {
   defaultPrinter: string;
   scannerEnabled: boolean;
   scaleEnabled: boolean;
-  theme: 'dark' | 'light' | 'blue';
+  theme: 'dark' | 'light' | 'halloween';
   storeName: string;
   storeAddress: string;
   storePhone: string;
@@ -13,7 +13,7 @@ interface SettingsState {
   setDefaultPrinter: (printerName: string) => void;
   setScannerEnabled: (enabled: boolean) => void;
   setScaleEnabled: (enabled: boolean) => void;
-  setTheme: (theme: 'dark' | 'light' | 'blue') => void;
+  setTheme: (theme: 'dark' | 'light' | 'halloween') => void;
   setStoreInfo: (info: { storeName: string; storeAddress: string; storePhone: string }) => void;
   setTaxRate: (rate: number) => void;
 }
