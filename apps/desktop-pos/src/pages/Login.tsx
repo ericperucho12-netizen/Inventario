@@ -152,8 +152,8 @@ export default function Login() {
               <div className="space-y-1 relative z-10">
                 {/* Username Input */}
                 <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
-                    🧙‍♀️
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                    <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-orange-500' : 'text-slate-500'}`} />
                   </div>
                   <div className="flex-1">
                     <input 
@@ -173,8 +173,8 @@ export default function Login() {
                 <>
                   <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                   <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
-                      🧛‍♂️
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                      <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-orange-500' : 'text-slate-500'}`} />
                     </div>
                     <div className="flex-1">
                       <input 
@@ -191,8 +191,8 @@ export default function Login() {
                   </div>
                   <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                   <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
-                      🏪
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                      <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-orange-500' : 'text-slate-500'}`} />
                     </div>
                     <div className="flex-1">
                       <input 
@@ -214,8 +214,8 @@ export default function Login() {
 
               {/* Password Input */}
               <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-transparent`}>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center text-xl">
-                  🗝️
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+                  <KeyRound className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-orange-500' : 'text-slate-500'}`} />
                 </div>
                 <div className="flex-1">
                   <input 
@@ -236,9 +236,9 @@ export default function Login() {
 
           {/* Mantener sesión iniciada Checkbox */}
           <div className="flex items-center justify-start px-2 pt-2">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className="flex items-center justify-center text-xl">
-                {keepSession ? '🎃' : <span className="w-5 h-5 border border-white/20 rounded"></span>}
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <div className={`flex h-5 w-5 items-center justify-center rounded border transition-all ${keepSession ? 'border-orange-500 bg-orange-500' : 'border-slate-600 bg-white/[0.02] group-hover:border-orange-400'}`}>
+                {keepSession && <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
               </div>
               <input 
                 type="checkbox" 
@@ -252,10 +252,6 @@ export default function Login() {
 
           {/* Sign In Button */}
           <div className="relative rounded-2xl p-[2px] bg-gradient-to-r from-orange-500 to-purple-600 shadow-[0_0_20px_rgba(249,115,22,0.4)] mt-8 group">
-            {/* Bats on corners */}
-            <span className="absolute -top-3 -left-3 text-2xl animate-bounce" style={{ animationDuration: '2s' }}>🦇</span>
-            <span className="absolute -bottom-3 -right-3 text-2xl animate-bounce" style={{ animationDuration: '2.5s' }}>🦇</span>
-            
             <button 
               type="submit" 
               disabled={loading || !username || !password}
@@ -296,9 +292,14 @@ export default function Login() {
           )}
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-center gap-1">
-          <span className="text-xs text-white/30 font-medium tracking-widest">PERUCHOS POS v2.0</span>
-          <span className="text-xl animate-[bounce_4s_infinite]">🕷️</span>
+        <div className="mt-8 flex justify-center">
+          <button 
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-orange-500 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
+          >
+            <Settings className="h-4 w-4" />
+            Configurar Conexión
+          </button>
         </div>
 
         <div className="mt-8 text-center text-xs text-slate-600 font-medium tracking-wider">
