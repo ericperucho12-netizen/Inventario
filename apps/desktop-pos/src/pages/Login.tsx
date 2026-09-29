@@ -97,13 +97,16 @@ export default function Login() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] font-sans selection:bg-indigo-500/30">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#09090b] bg-[url('https://images.unsplash.com/photo-1508361001413-7a9dca21d08a?q=80&w=2070')] bg-cover bg-center font-sans selection:bg-orange-500/30">
       
       {/* Background Animated Orbs for a premium feel */}
-      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-orange-600/20 blur-[120px] animate-[pulse_4s_ease-in-out_infinite]" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-purple-700/20 blur-[150px] animate-[pulse_5s_ease-in-out_infinite]" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-orange-600/30 blur-[120px] animate-[pulse_4s_ease-in-out_infinite]" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-purple-700/30 blur-[150px] animate-[pulse_5s_ease-in-out_infinite]" style={{ animationDelay: '2s' }} />
+      
+      {/* Overlay to ensure contrast */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
 
-      <div className="z-10 w-full max-w-md px-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+      <div className="z-10 w-full max-w-md px-8 py-10 rounded-2xl backdrop-blur-md bg-black/50 shadow-[0_0_20px_rgba(168,85,247,0.4)] border border-white/10 animate-in fade-in slide-in-from-bottom-8 duration-700 m-4">
         
         {/* Greeting */}
         <div className="mb-10 flex flex-col items-center text-center">
@@ -125,15 +128,15 @@ export default function Login() {
         )}
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Inputs Section Container (Mobile iOS style grouped inputs) */}
-          <div className="rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-2 shadow-2xl overflow-hidden relative">
-            
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.04] to-transparent pointer-events-none"></div>
-
+          <div className="space-y-4 relative">
             {/* Username Input */}
-            <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'username' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+            <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'username' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
               <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-orange-500' : 'text-slate-500'}`} />
+                {/* Sombrero de bruja SVG */}
+                <svg className={`h-5 w-5 transition-colors ${focusedInput === 'username' ? 'text-orange-500' : 'text-slate-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L7 17H17L12 2Z" />
+                  <path d="M3 17C3 17 8 20 12 20C16 20 21 17 21 17" />
+                </svg>
               </div>
               <div className="flex-1">
                 <input 
@@ -151,8 +154,7 @@ export default function Login() {
 
             {isRegistering && (
               <>
-                <div className="h-[1px] w-full bg-white/5 ml-12"></div>
-                <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'fullName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+                <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'fullName' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center">
                     <UserCircle className={`h-5 w-5 transition-colors ${focusedInput === 'fullName' ? 'text-orange-500' : 'text-slate-500'}`} />
                   </div>
@@ -169,8 +171,7 @@ export default function Login() {
                     />
                   </div>
                 </div>
-                <div className="h-[1px] w-full bg-white/5 ml-12"></div>
-                <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'companyName' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+                <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'companyName' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center">
                     <Server className={`h-5 w-5 transition-colors ${focusedInput === 'companyName' ? 'text-orange-500' : 'text-slate-500'}`} />
                   </div>
@@ -190,12 +191,14 @@ export default function Login() {
               </>
             )}
 
-            <div className="h-[1px] w-full bg-white/5 ml-12"></div>
-
             {/* Password Input */}
-            <div className={`relative flex items-center rounded-2xl p-1 transition-all duration-300 ${focusedInput === 'password' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}>
+            <div className={`relative flex items-center rounded-xl transition-all duration-300 bg-gray-900 border ${focusedInput === 'password' ? 'border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.3)]' : 'border-white/10'}`}>
               <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-                <KeyRound className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-orange-500' : 'text-slate-500'}`} />
+                {/* Llave antigua SVG */}
+                <svg className={`h-5 w-5 transition-colors ${focusedInput === 'password' ? 'text-orange-500' : 'text-slate-500'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="7" cy="15" r="4" />
+                  <path d="M10.5 11.5L20 2v4l-3 3v3l-3 3" />
+                </svg>
               </div>
               <div className="flex-1">
                 <input 
@@ -232,7 +235,7 @@ export default function Login() {
           <button 
             type="submit" 
             disabled={loading || !username || !password}
-            className="group relative flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-orange-500 to-purple-600 py-4 font-bold text-white transition-all duration-300 hover:from-orange-400 hover:to-purple-500 hover:shadow-[0_0_30px_rgba(249,115,22,0.4)] active:scale-[0.98] disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-purple-600 disabled:hover:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed overflow-hidden mt-8"
+            className="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-purple-600 py-4 font-bold text-white transition-all duration-300 hover:from-orange-400 hover:to-purple-500 hover:shadow-[0_0_15px_rgba(249,115,22,0.8)] active:scale-[0.98] disabled:opacity-50 disabled:hover:from-orange-500 disabled:hover:to-purple-600 disabled:hover:shadow-none disabled:active:scale-100 disabled:cursor-not-allowed overflow-hidden mt-8"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
             
@@ -252,7 +255,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => setIsRegistering(!isRegistering)}
-            className="block w-full text-orange-400 text-sm font-medium hover:text-orange-300 transition-colors"
+            className="block w-full text-orange-400 text-sm font-medium hover:text-orange-500 transition-colors"
           >
             {isRegistering ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Registra tu empresa'}
           </button>
@@ -271,7 +274,7 @@ export default function Login() {
         <div className="mt-8 flex justify-center">
           <button 
             onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-orange-400 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
+            className="flex items-center gap-2 text-xs font-medium text-slate-500 hover:text-orange-500 transition-colors bg-slate-900 px-4 py-2 rounded-full border border-slate-800 hover:border-indigo-500/30"
           >
             <Settings className="h-4 w-4" />
             Configurar Conexión
