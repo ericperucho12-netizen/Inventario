@@ -2,11 +2,15 @@ import { Controller, Get, Post, Body, Param, Delete, UseGuards, Patch, Request, 
 import { ProductsService } from './products.service.js';
 import { Product } from './entities/product.entity.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
+import { EventsGateway } from '../events/events.gateway.js';
 
 @UseGuards(JwtAuthGuard)
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly eventsGateway: EventsGateway
+  ) {}
 
   @Post()
   create(@Request() req: any, @Body() createProductDto: Partial<Product>) {
@@ -40,8 +44,8 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() body: { delta: number; reason: string }
   ) {
-    const product = await this.productsService.findOne(id, req.user.companyId);
-    const newStock = Math.max(0, Number(product.stock) + body.delta);
-    return this.productsService.update(id, { stock: newStock } as any, req.user.companyId);
+    const product = await this.productsService.adjustStock(id, body.delta, body.reason, req.user.companyId);
+    this.eventsGateway.emitInventoryUpdate(req.user.companyId);
+    return product;
   }
 }

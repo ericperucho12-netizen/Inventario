@@ -549,11 +549,11 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Últimos Gastos / Mermas */}
+        {/* Últimos Gastos */}
         <div className="bg-slate-900/50 border border-orange-500/20 hover:border-orange-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col">
           <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
             <Wallet className="h-5 w-5 text-orange-500" />
-            Gastos y Mermas (Fugas de Dinero)
+            Gastos Operativos
           </h3>
           <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
             {summary.recentExpenses?.map((expense: any) => (
@@ -578,7 +578,7 @@ export default function DashboardHome() {
             ))}
             {(!summary.recentExpenses || summary.recentExpenses.length === 0) && (
               <div className="text-center text-slate-500 py-8 text-sm">
-                No hay gastos ni mermas registradas.
+                No hay gastos registrados.
               </div>
             )}
           </div>

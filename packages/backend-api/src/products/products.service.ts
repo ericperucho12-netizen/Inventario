@@ -1,8 +1,9 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Product } from './entities/product.entity.js';
 import { CategoriesService } from '../categories/categories.service.js';
+import { Expense } from '../expenses/entities/expense.entity.js';
 
 @Injectable()
 export class ProductsService {
@@ -10,6 +11,7 @@ export class ProductsService {
     @InjectRepository(Product)
     private productRepository: Repository<Product>,
     private categoriesService: CategoriesService,
+    private dataSource: DataSource,
   ) {}
 
   async create(createProductDto: Partial<Product>, companyId: string): Promise<Product> {
@@ -77,5 +79,27 @@ export class ProductsService {
     const product = await this.findOne(id, companyId);
     product.isActive = false;
     await this.productRepository.save(product);
+  }
+
+  async adjustStock(id: string, delta: number, reason: string, companyId: string): Promise<Product> {
+    const product = await this.findOne(id, companyId);
+    const oldStock = Number(product.stock);
+    const newStock = Math.max(0, oldStock + delta);
+    
+    // Si se están quitando productos (merma/robo), registrar el valor perdido como un gasto
+    if (delta < 0) {
+      const lostQuantity = oldStock - newStock;
+      if (lostQuantity > 0) {
+        const expense = new Expense();
+        expense.companyId = companyId;
+        expense.description = `Baja de Inventario: ${product.description} (${reason})`;
+        expense.amount = lostQuantity * Number(product.costPrice);
+        expense.category = 'Merma';
+        await this.dataSource.manager.save(expense);
+      }
+    }
+    
+    product.stock = newStock;
+    return this.productRepository.save(product);
   }
 }
