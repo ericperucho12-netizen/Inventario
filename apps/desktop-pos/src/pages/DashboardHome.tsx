@@ -414,7 +414,7 @@ export default function DashboardHome() {
                   compras: d.compras > 0 ? -d.compras : d.compras,
                   gastos: d.gastos > 0 ? -d.gastos : d.gastos
                 }))} 
-                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'light' ? '#00000010' : '#ffffff10'} vertical={false} />
                 <XAxis 
@@ -444,8 +444,8 @@ export default function DashboardHome() {
                 />
                 <Legend wrapperStyle={{ paddingTop: '10px' }} />
                 <Bar dataKey="ventas" name="Ventas" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="compras" name="Compras" fill="#6366f1" radius={[6, 6, 0, 0]} maxBarSize={40} />
-                <Bar dataKey="gastos" name="Gastos" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                <Bar dataKey="compras" name="Compras" fill="#6366f1" radius={[0, 0, 6, 6]} maxBarSize={40} />
+                <Bar dataKey="gastos" name="Gastos" fill="#f97316" radius={[0, 0, 6, 6]} maxBarSize={40} />
               </BarChart>
             </ResponsiveContainer>
           </div>
