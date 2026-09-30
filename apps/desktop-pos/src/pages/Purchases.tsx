@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '../lib/axios';
+import { api, getApiUrl } from '../lib/axios';
+import { io } from 'socket.io-client';
+import { useAuthStore } from '../store/auth.store';
 import { 
   Search, Plus, Minus, Trash2, ShoppingCart, 
   Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer, ClipboardList, CheckCircle, Edit
@@ -78,6 +80,28 @@ export default function Purchases() {
     fetchSuppliers();
     fetchCategories();
     fetchPendingLists();
+
+    // Sockets para Tiempo Real
+    const user = useAuthStore.getState().user;
+    const socket = io(getApiUrl(), {
+      query: { companyId: (user as any)?.companyId }
+    });
+
+    socket.on('inventory-updated', () => {
+      // Cuando otro dispositivo cambia algo
+      api.get('/products').then(res => {
+        setProducts(res.data);
+        setCachedProducts(res.data);
+      });
+      fetchPendingLists();
+      
+      setToastMessage('📦 Datos actualizados (Tiempo Real)');
+      setTimeout(() => setToastMessage(null), 2500);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const fetchPendingLists = async () => {

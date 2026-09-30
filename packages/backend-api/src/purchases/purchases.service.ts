@@ -149,6 +149,9 @@ export class PurchasesService {
     if (purchase.status === 'COMPLETED') throw new BadRequestException('No se puede eliminar una compra completada');
     
     await this.dataSource.manager.remove(purchase);
+    
+    this.eventsGateway.emitInventoryUpdate(companyId);
+    
     return { success: true };
   }
 }
