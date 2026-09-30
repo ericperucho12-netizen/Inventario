@@ -45,6 +45,12 @@ export default function Purchases() {
   const [selectedSupplierId, setSelectedSupplierId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
   
   const { scannerEnabled, defaultPrinter } = useSettingsStore();
   const barcodeBuffer = useRef('');
@@ -84,34 +90,41 @@ export default function Purchases() {
     }
   };
 
-  const handleReceiveList = async (list: any) => {
-    if (!window.confirm('¿Confirmas que ya recibiste esta carga? El stock se sumará al inventario y se generará el comprobante.')) return;
-    try {
-      setIsProcessing(true);
-      const response = await api.patch(`/purchases/${list.id}/receive`);
-      
-      setTicketData({
-        items: list.details.map((d: any) => ({
-           product: d.product,
-           quantity: d.quantity,
-           unitCost: d.unitCost
-        })),
-        total: list.total,
-        date: new Date(),
-        id: response.data.id || list.id,
-        supplierName: list.supplier?.name
-      });
-      setShowTicket(true);
-      
-      setToastMessage('Inventario actualizado exitosamente');
-      setTimeout(() => setToastMessage(null), 3000);
-      fetchPendingLists();
-      fetchProducts();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al recibir carga');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleReceiveList = (list: any) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Confirmar Recepción',
+      message: '¿Confirmas que ya recibiste esta carga? El stock se sumará al inventario y se generará el comprobante.',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          setIsProcessing(true);
+          const response = await api.patch(`/purchases/${list.id}/receive`);
+          
+          setTicketData({
+            items: list.details.map((d: any) => ({
+               product: d.product,
+               quantity: Number(d.quantity) || 0,
+               unitCost: Number(d.unitCost) || 0
+            })),
+            total: Number(list.total) || 0,
+            date: new Date(),
+            id: response.data.id || list.id,
+            supplierName: list.supplier?.name
+          });
+          setShowTicket(true);
+          
+          setToastMessage('Inventario actualizado exitosamente');
+          setTimeout(() => setToastMessage(null), 3000);
+          fetchPendingLists();
+          fetchProducts();
+        } catch (error: any) {
+          alert(error.response?.data?.message || 'Error al recibir carga');
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    });
   };
 
   const handleEditList = async (list: any) => {
@@ -134,19 +147,26 @@ export default function Purchases() {
     }
   };
 
-  const handleDeleteList = async (listId: string) => {
-    if (!window.confirm('¿Seguro que deseas eliminar esta lista pendiente? No se sumará al stock.')) return;
-    try {
-      setIsProcessing(true);
-      await api.delete(`/purchases/${listId}`);
-      fetchPendingLists();
-      setToastMessage('Lista eliminada');
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch (error) {
-      alert('Error al eliminar lista');
-    } finally {
-      setIsProcessing(false);
-    }
+  const handleDeleteList = (listId: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Eliminar Lista',
+      message: '¿Seguro que deseas eliminar esta lista pendiente? No se sumará al stock.',
+      onConfirm: async () => {
+        setConfirmDialog(null);
+        try {
+          setIsProcessing(true);
+          await api.delete(`/purchases/${listId}`);
+          fetchPendingLists();
+          setToastMessage('Lista eliminada');
+          setTimeout(() => setToastMessage(null), 3000);
+        } catch (error) {
+          alert('Error al eliminar lista');
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    });
   };
 
   useEffect(() => {
@@ -807,7 +827,7 @@ export default function Purchases() {
               
               <div className="border-y border-dashed border-black my-4 py-2">
                 <p>Fecha: {ticketData.date.toLocaleString()}</p>
-                <p>Folio Ref: {ticketData.id.substring(0, 8)}</p>
+                <p>Folio Ref: {String(ticketData.id).substring(0, 8)}</p>
                 <p>Proveedor: {ticketData.supplierName || 'Compra Independiente'}</p>
               </div>
 
@@ -858,7 +878,7 @@ export default function Purchases() {
             
             <div className="border-y border-dashed border-black my-4 py-2">
               <p>Fecha: {ticketData.date.toLocaleString()}</p>
-              <p>Folio Ref: {ticketData.id.substring(0, 8)}</p>
+              <p>Folio Ref: {String(ticketData.id).substring(0, 8)}</p>
               <p>Proveedor: {ticketData.supplierName || 'Compra Independiente'}</p>
             </div>
 
@@ -881,6 +901,30 @@ export default function Purchases() {
           </div>
         )}
       </div>
+
+      {/* Confirm Dialog */}
+      {confirmDialog && confirmDialog.isOpen && (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in zoom-in-95">
+            <h2 className="text-xl font-bold text-white mb-2">{confirmDialog.title}</h2>
+            <p className="text-slate-400 mb-6">{confirmDialog.message}</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setConfirmDialog(null)}
+                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmDialog.onConfirm}
+                className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (
