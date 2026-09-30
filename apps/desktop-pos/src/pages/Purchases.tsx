@@ -217,42 +217,21 @@ export default function Purchases() {
     setSearch('');
     
     if (initialStock > 0) {
-      try {
-        setIsProcessing(true);
-        const payload = {
-          supplierId: supplierId || undefined,
-          items: [{
-            productId: newProduct.id,
-            quantity: initialStock,
-            unitCost: newProduct.costPrice || 0,
-            newSellingPrice: newProduct.sellingPrice || 0
-          }]
-        };
-        const response = await api.post('/purchases', payload);
-        
-        setTicketData({
-          items: [{
-            product: newProduct,
-            quantity: initialStock,
-            unitCost: newProduct.costPrice || 0,
-            newSellingPrice: newProduct.sellingPrice || 0
-          }],
-          total: (newProduct.costPrice || 0) * initialStock,
-          date: new Date(),
-          id: response.data.id,
-          supplierName: supplierId ? suppliers.find(s => s.id === supplierId)?.name : 'Inventario Inicial'
-        });
-        setShowTicket(true);
-        
-        fetchProducts(); // Refrescar inventario con el nuevo stock
-        setToastMessage('Producto dado de alta con inventario inicial');
-        setTimeout(() => setToastMessage(null), 3000);
-      } catch (error) {
-        console.error('Error procesando compra inicial:', error);
-        alert('El producto se guardó, pero hubo un error registrando el stock inicial.');
-      } finally {
-        setIsProcessing(false);
-      }
+      setCart(prev => {
+        const existing = prev.find(item => item.product.id === newProduct.id);
+        if (existing) {
+          return prev.map(item => item.product.id === newProduct.id ? { ...item, quantity: item.quantity + initialStock } : item);
+        }
+        return [...prev, {
+          product: newProduct,
+          quantity: initialStock,
+          unitCost: newProduct.costPrice || 0,
+          newSellingPrice: newProduct.sellingPrice || 0
+        }];
+      });
+      if (supplierId) setSelectedSupplierId(supplierId);
+      setToastMessage('Producto agregado a la lista de compra actual');
+      setTimeout(() => setToastMessage(null), 3000);
     } else {
       setToastMessage('Producto dado de alta sin stock');
       setTimeout(() => setToastMessage(null), 3000);
