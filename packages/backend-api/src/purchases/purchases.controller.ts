@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { PurchasesService } from './purchases.service.js';
 import { CreatePurchaseDto } from './dto/create-purchase.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
@@ -26,5 +26,10 @@ export class PurchasesController {
   @Patch(':id/receive')
   receive(@Request() req: any, @Param('id') id: string) {
     return this.purchasesService.receive(id, req.user.companyId);
+  }
+
+  @Delete(':id')
+  remove(@Request() req: any, @Param('id') id: string) {
+    return this.purchasesService.remove(id, req.user.companyId);
   }
 }

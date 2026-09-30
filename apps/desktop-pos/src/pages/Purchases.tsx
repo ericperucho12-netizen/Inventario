@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/axios';
 import { 
   Search, Plus, Minus, Trash2, ShoppingCart, 
-  Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer, ClipboardList, CheckCircle
+  Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer, ClipboardList, CheckCircle, Edit
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSettingsStore } from '../store/settings.store';
@@ -84,17 +84,66 @@ export default function Purchases() {
     }
   };
 
-  const handleReceiveList = async (listId: string) => {
-    if (!window.confirm('¿Confirmas que ya recibiste esta carga? El stock se sumará al inventario.')) return;
+  const handleReceiveList = async (list: any) => {
+    if (!window.confirm('¿Confirmas que ya recibiste esta carga? El stock se sumará al inventario y se generará el comprobante.')) return;
     try {
       setIsProcessing(true);
-      await api.patch(`/purchases/${listId}/receive`);
+      const response = await api.patch(`/purchases/${list.id}/receive`);
+      
+      setTicketData({
+        items: list.details.map((d: any) => ({
+           product: d.product,
+           quantity: d.quantity,
+           unitCost: d.unitCost
+        })),
+        total: list.total,
+        date: new Date(),
+        id: response.data.id || list.id,
+        supplierName: list.supplier?.name
+      });
+      setShowTicket(true);
+      
       setToastMessage('Inventario actualizado exitosamente');
       setTimeout(() => setToastMessage(null), 3000);
       fetchPendingLists();
       fetchProducts();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Error al recibir carga');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleEditList = async (list: any) => {
+    try {
+      setCart(list.details.map((d: any) => ({
+        product: d.product,
+        quantity: d.quantity,
+        unitCost: d.unitCost,
+        newSellingPrice: d.product.sellingPrice
+      })));
+      if (list.supplierId) {
+         setSelectedSupplierId(list.supplierId);
+      }
+      await api.delete(`/purchases/${list.id}`);
+      setActiveTab('NEW');
+      fetchPendingLists();
+    } catch (error) {
+      console.error(error);
+      alert('Error al editar lista');
+    }
+  };
+
+  const handleDeleteList = async (listId: string) => {
+    if (!window.confirm('¿Seguro que deseas eliminar esta lista pendiente? No se sumará al stock.')) return;
+    try {
+      setIsProcessing(true);
+      await api.delete(`/purchases/${listId}`);
+      fetchPendingLists();
+      setToastMessage('Lista eliminada');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) {
+      alert('Error al eliminar lista');
     } finally {
       setIsProcessing(false);
     }
@@ -701,16 +750,38 @@ export default function Purchases() {
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800">
-                    <span className="font-bold text-lg">${Number(list.total).toFixed(2)}</span>
-                    <button
-                      onClick={() => handleReceiveList(list.id)}
-                      disabled={isProcessing}
-                      className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                      Marcar Recibido
-                    </button>
+                  <div className="flex flex-col gap-2 mt-auto pt-4 border-t border-slate-800">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-lg">${Number(list.total).toFixed(2)}</span>
+                      <button
+                        onClick={() => handleReceiveList(list)}
+                        disabled={isProcessing}
+                        className="bg-emerald-500 hover:bg-emerald-400 text-white px-3 py-1.5 rounded-lg font-bold text-sm flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                        title="Recibir Carga"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Recibir
+                      </button>
+                    </div>
+                    
+                    <div className="flex gap-2 w-full">
+                      <button
+                        onClick={() => handleEditList(list)}
+                        disabled={isProcessing}
+                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-slate-700"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteList(list.id)}
+                        disabled={isProcessing}
+                        className="flex-1 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-1.5 rounded-lg font-medium text-sm flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50 border border-red-500/20"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

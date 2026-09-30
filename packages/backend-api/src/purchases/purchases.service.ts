@@ -140,4 +140,15 @@ export class PurchasesService {
       await queryRunner.release();
     }
   }
+
+  async remove(id: string, companyId: string) {
+    const purchase = await this.dataSource.manager.findOne(Purchase, {
+      where: { id, companyId }
+    });
+    if (!purchase) throw new NotFoundException('Compra no encontrada');
+    if (purchase.status === 'COMPLETED') throw new BadRequestException('No se puede eliminar una compra completada');
+    
+    await this.dataSource.manager.remove(purchase);
+    return { success: true };
+  }
 }
