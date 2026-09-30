@@ -3,6 +3,9 @@ import { api } from '../lib/axios';
 import { ShoppingCart, Plus, Minus, Trash2, CreditCard, Search, Loader2, Printer, X, CheckCircle2, User, FileText, PackageOpen, Filter, Users, Barcode, Scale } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
 import { useOfflineStore } from '../store/offline.store';
+import { useAuthStore } from '../store/auth.store';
+import { getApiUrl } from '../lib/axios';
+import { io } from 'socket.io-client';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchProductInfo } from '../lib/globalProductsApi';
 import { CameraScanner } from '../components/CameraScanner';
@@ -114,6 +117,26 @@ export default function Pos() {
     fetchCategories();
     fetchCustomers();
     fetchShiftStatus();
+
+    // Sockets para Tiempo Real
+    const user = useAuthStore.getState().user;
+    const socket = io(getApiUrl(), {
+      query: { companyId: (user as any)?.companyId }
+    });
+
+    socket.on('inventory-updated', () => {
+      // Cuando otro cajero cobra o un proveedor surte, refrescamos el inventario en silencio
+      api.get('/products').then(res => {
+        setProducts(res.data);
+        setCachedProducts(res.data);
+        setToastMessage('📦 Inventario actualizado (Tiempo Real)');
+        setTimeout(() => setToastMessage(null), 2500);
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleBarcodeScan = async (scannedCode: string) => {

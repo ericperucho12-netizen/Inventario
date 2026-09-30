@@ -5,10 +5,14 @@ import { Purchase } from './entities/purchase.entity.js';
 import { PurchaseDetail } from './entities/purchase-detail.entity.js';
 import { Product } from '../products/entities/product.entity.js';
 import { Supplier } from '../suppliers/entities/supplier.entity.js';
+import { EventsGateway } from '../events/events.gateway.js';
 
 @Injectable()
 export class PurchasesService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   async create(createPurchaseDto: CreatePurchaseDto, userId: string, companyId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -64,6 +68,9 @@ export class PurchasesService {
       const savedPurchase = await queryRunner.manager.save(purchase);
       
       await queryRunner.commitTransaction();
+      
+      this.eventsGateway.emitInventoryUpdate(companyId);
+
       return savedPurchase;
     } catch (error) {
       await queryRunner.rollbackTransaction();

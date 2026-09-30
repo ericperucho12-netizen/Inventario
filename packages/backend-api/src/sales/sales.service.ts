@@ -6,10 +6,14 @@ import { SaleDetail } from './entities/sale-detail.entity.js';
 import { Product } from '../products/entities/product.entity.js';
 import { CashShift } from '../cash-shifts/entities/cash-shift.entity.js';
 import { Customer } from '../customers/entities/customer.entity.js';
+import { EventsGateway } from '../events/events.gateway.js';
 
 @Injectable()
 export class SalesService {
-  constructor(private dataSource: DataSource) {}
+  constructor(
+    private dataSource: DataSource,
+    private eventsGateway: EventsGateway,
+  ) {}
 
   async create(createSaleDto: CreateSaleDto, userId: string, companyId: string) {
     const queryRunner = this.dataSource.createQueryRunner();
@@ -84,6 +88,10 @@ export class SalesService {
       const savedSale = await queryRunner.manager.save(sale);
       
       await queryRunner.commitTransaction();
+      
+      // Emitir evento WebSocket para actualizar en tiempo real las pantallas
+      this.eventsGateway.emitInventoryUpdate(companyId);
+
       return savedSale;
 
     } catch (error) {

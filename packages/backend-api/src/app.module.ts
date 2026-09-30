@@ -20,6 +20,7 @@ import { CompaniesModule } from './companies/companies.module.js';
 import { SuperadminModule } from './superadmin/superadmin.module.js';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { EventsModule } from './events/events.module.js';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { APP_GUARD } from '@nestjs/core';
     StripeModule,
     CompaniesModule,
     SuperadminModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [
