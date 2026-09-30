@@ -343,19 +343,37 @@ export default function DashboardHome() {
           </span>
         </Link>
 
-        {/* Utilidades (Ganancias) */}
-        <div className="bg-slate-900/50 border border-emerald-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
-          <div className="absolute -right-4 -top-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all"></div>
+        {/* Utilidades (Ganancias Reales) */}
+        <div className={`bg-slate-900/50 border rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group ${
+          (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
+            ? 'border-red-500/30 hover:border-red-500/50' 
+            : 'border-emerald-500/20 hover:border-emerald-500/40'
+        } transition-all`}>
+          <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-xl transition-all ${
+            (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
+              ? 'bg-red-500/10 group-hover:bg-red-500/20' 
+              : 'bg-emerald-500/10 group-hover:bg-emerald-500/20'
+          }`}></div>
           <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
+            <div className={`p-3 rounded-xl ${
+              (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
+                ? 'bg-red-500/20 text-red-400' 
+                : 'bg-emerald-500/20 text-emerald-400'
+            }`}>
               <TrendingUp className="h-6 w-6" />
             </div>
-            <h3 className="text-slate-400 font-medium">Utilidad Neta</h3>
+            <h3 className="text-slate-400 font-medium">Utilidad Neta Real</h3>
           </div>
-          <p className="text-3xl font-bold text-emerald-400 mb-1">
-            ${(summary.monthProfit || 0).toFixed(2)}
+          <p className={`text-3xl font-bold mb-1 ${
+            (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? 'text-red-400' : 'text-emerald-400'
+          }`}>
+            {((summary.monthProfit || 0) - (summary.monthExpenses || 0)) < 0 ? '-' : ''}${Math.abs((summary.monthProfit || 0) - (summary.monthExpenses || 0)).toFixed(2)}
           </p>
-          <span className="text-xs text-emerald-400/50 mt-auto">Ganancias este mes</span>
+          <span className={`text-xs mt-auto ${
+             (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? 'text-red-400/70' : 'text-emerald-400/50'
+          }`}>
+            {(summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? '¡Estás en pérdidas!' : 'Ganancia - Gastos'}
+          </span>
         </div>
 
         {/* Cuentas por Cobrar */}
