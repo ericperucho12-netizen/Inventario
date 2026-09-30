@@ -21,6 +21,7 @@ interface DashboardSummary {
   inventoryValue: number;
   chartData: { date: string; name: string; ventas: number; compras: number; gastos: number }[];
   recentSales: any[];
+  recentExpenses: any[];
   topProducts: { name: string; totalSold: number; profit: number }[];
 }
 
@@ -510,40 +511,80 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* Top Products */}
-      <div className="mt-6 bg-slate-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm">
-        <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-purple-500" />
-          Productos más vendidos y Ganancias
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-900/50 text-slate-300">
-              <tr>
-                <th className="px-4 py-3 font-medium">Producto</th>
-                <th className="px-4 py-3 font-medium text-right">Cantidad Vendida</th>
-                <th className="px-4 py-3 font-medium text-right">Ganancia (MXN)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {summary.topProducts?.map((product, idx) => (
-                <tr key={idx} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-3 font-medium text-white">{product.name}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{product.totalSold}</td>
-                  <td className="px-4 py-3 text-right font-bold text-emerald-400">
-                    ${product.profit.toFixed(2)}
-                  </td>
-                </tr>
-              ))}
-              {(!summary.topProducts || summary.topProducts.length === 0) && (
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-6">
+        {/* Top Products */}
+        <div className="bg-slate-900/50 border border-purple-500/20 hover:border-purple-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-purple-500" />
+            Productos más vendidos y Ganancias
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-900/50 text-slate-300">
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
-                    Aún no hay datos de productos más vendidos.
-                  </td>
+                  <th className="px-4 py-3 font-medium">Producto</th>
+                  <th className="px-4 py-3 font-medium text-right">Cant. Vendida</th>
+                  <th className="px-4 py-3 font-medium text-right">Ganancia</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {summary.topProducts?.map((product, idx) => (
+                  <tr key={idx} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 font-medium text-white">{product.name}</td>
+                    <td className="px-4 py-3 text-right text-slate-300">{product.totalSold}</td>
+                    <td className="px-4 py-3 text-right font-bold text-emerald-400">
+                      ${product.profit.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+                {(!summary.topProducts || summary.topProducts.length === 0) && (
+                  <tr>
+                    <td colSpan={3} className="px-4 py-8 text-center text-slate-500">
+                      Aún no hay datos de productos más vendidos.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Últimos Gastos / Mermas */}
+        <div className="bg-slate-900/50 border border-orange-500/20 hover:border-orange-500/40 transition-all rounded-2xl p-6 backdrop-blur-sm flex flex-col">
+          <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+            <Wallet className="h-5 w-5 text-orange-500" />
+            Gastos y Mermas (Fugas de Dinero)
+          </h3>
+          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+            {summary.recentExpenses?.map((expense: any) => (
+              <div key={expense.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-white text-sm">
+                    {expense.description}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {new Date(expense.createdAt).toLocaleDateString()} {new Date(expense.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-red-400">
+                    -${Number(expense.amount).toFixed(2)}
+                  </p>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 inline-block bg-red-500/20 text-red-400">
+                    SALIDA
+                  </span>
+                </div>
+              </div>
+            ))}
+            {(!summary.recentExpenses || summary.recentExpenses.length === 0) && (
+              <div className="text-center text-slate-500 py-8 text-sm">
+                No hay gastos ni mermas registradas.
+              </div>
+            )}
+          </div>
+          <Link to="/expenses" className="mt-4 pt-4 border-t border-white/10 text-center text-sm text-orange-400 font-medium hover:text-orange-300 transition-colors">
+            Registrar o ver todos los gastos →
+          </Link>
         </div>
       </div>
 

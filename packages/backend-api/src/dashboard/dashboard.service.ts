@@ -155,8 +155,14 @@ export class DashboardService {
       take: 5
     });
 
-    // Top Selling Products (Lifetime or Month? User asked for filters, let's just do top products for now, maybe all-time or last 30 days)
-    // We'll calculate profit as (unitPrice - unitCost) * quantity
+    // Recent Expenses (Pérdidas/Mermas)
+    const recentExpenses = await this.dataSource.manager.find(Expense, {
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+      take: 5
+    });
+
+    // Top Selling Products
     const topProducts = await this.dataSource.manager.query(`
       SELECT 
         p.description as name, 
@@ -183,6 +189,7 @@ export class DashboardService {
       inventoryValue: parseFloat(inventoryResult?.total || 0),
       chartData,
       recentSales,
+      recentExpenses,
       topProducts: topProducts.map((p: any) => ({
         name: p.name,
         totalSold: Number(p.totalSold),
