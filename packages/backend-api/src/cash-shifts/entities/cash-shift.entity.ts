@@ -22,6 +22,9 @@ export class CashShift {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   systemAmount: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  extraIncome: number;
+
   @Column({ default: 'OPEN' })
   status: 'OPEN' | 'CLOSED';
 

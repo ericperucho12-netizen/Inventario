@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Customer } from './entities/customer.entity.js';
 import { Sale } from '../sales/entities/sale.entity.js';
+import { CashShift } from '../cash-shifts/entities/cash-shift.entity.js';
 
 @Injectable()
 export class CustomersService {
@@ -77,6 +78,15 @@ export class CustomersService {
           await this.customerRepository.manager.save(sale);
         }
       }
+    }
+
+    // Add payment to the current cash shift as extraIncome
+    const currentShift = await this.customerRepository.manager.findOne(CashShift, {
+      where: { status: 'OPEN', companyId }
+    });
+    if (currentShift) {
+      currentShift.extraIncome = Number(currentShift.extraIncome || 0) + amount;
+      await this.customerRepository.manager.save(currentShift);
     }
 
     return customer;

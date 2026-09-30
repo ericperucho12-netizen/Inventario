@@ -655,9 +655,12 @@ export default function DashboardHome() {
             </div>
 
             <form onSubmit={handleCloseShift}>
-              <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10">
-                <p className="text-sm text-slate-300 mb-1">Tickets cobrados: <span className="font-bold text-white">{shiftMetrics.salesCount}</span></p>
-                <p className="text-xs text-amber-400">Cuenta tu dinero físico antes de continuar.</p>
+              <div className="mb-6 p-4 rounded-xl bg-white/5 border border-white/10 space-y-2">
+                <p className="text-sm text-slate-300">Tickets cobrados: <span className="font-bold text-white">{shiftMetrics.salesCount}</span></p>
+                {shiftMetrics.extraIncome > 0 && (
+                  <p className="text-sm text-emerald-400">Abonos recibidos: <span className="font-bold">+${shiftMetrics.extraIncome.toFixed(2)}</span></p>
+                )}
+                <p className="text-xs text-amber-400 pt-2 border-t border-white/10 mt-2">Cuenta tu dinero físico antes de continuar.</p>
               </div>
 
               <div className="mb-6">
@@ -706,6 +709,7 @@ export default function DashboardHome() {
                 <div className="border-y border-dashed border-gray-400 py-2 mb-2">
                   <p>Fondo Inicial: ${Number(ticketZ.initialAmount).toFixed(2)}</p>
                   <p>Ventas en Efectivo: ${Number(ticketZ.salesTotal).toFixed(2)}</p>
+                  <p>Abonos de Deudas: ${Number(ticketZ.extraIncome || 0).toFixed(2)}</p>
                   <p>Tickets Emitidos: {ticketZ.salesCount}</p>
                 </div>
                 <div className="mb-2">

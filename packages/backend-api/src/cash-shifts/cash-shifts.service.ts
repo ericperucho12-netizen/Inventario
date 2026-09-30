@@ -39,7 +39,8 @@ export class CashShiftsService {
       if (sale.isCredit) return acc;
       return acc + Number(sale.total);
     }, 0);
-    const systemAmount = Number(current.initialAmount) + totalSales;
+    const extraIncome = Number(current.extraIncome || 0);
+    const systemAmount = Number(current.initialAmount) + totalSales + extraIncome;
 
     current.declaredAmount = closeCashShiftDto.declaredAmount;
     current.systemAmount = systemAmount;
@@ -75,6 +76,7 @@ export class CashShiftsService {
       status: 'OPEN',
       shift: current,
       salesTotal,
+      extraIncome: Number(current.extraIncome || 0),
       salesCount: sales.length
     };
   }
