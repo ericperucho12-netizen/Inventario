@@ -505,11 +505,11 @@ export default function Purchases() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col xl:flex-row overflow-hidden relative">
+      <div className="flex-1 flex flex-col xl:flex-row overflow-y-auto xl:overflow-hidden custom-scrollbar relative">
       {activeTab === 'NEW' ? (
       <>
       {/* Lado Izquierdo: Buscador y Catálogo */}
-      <div className="flex-1 flex flex-col xl:h-full xl:overflow-hidden">
+      <div className="flex flex-col xl:flex-1 xl:h-full xl:overflow-hidden shrink-0">
         <div className="p-4 md:p-6 border-b border-white/10 shrink-0">
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <div className="relative flex-1">
