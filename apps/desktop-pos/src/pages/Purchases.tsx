@@ -302,24 +302,24 @@ export default function Purchases() {
 
       const supplier = suppliers.find(s => s.id === selectedSupplierId);
       
-      setTicketData({
-        items: [...cart],
-        total: subtotal,
-        date: new Date(),
-        id: responseId,
-        supplierName: supplier?.name
-      });
+      if (status === 'COMPLETED') {
+        setTicketData({
+          items: [...cart],
+          total: subtotal,
+          date: new Date(),
+          id: responseId,
+          supplierName: supplier?.name
+        });
+        setShowTicket(true);
+        setToastMessage('Inventario actualizado exitosamente');
+      } else {
+        setToastMessage('Lista de compras guardada exitosamente');
+        fetchPendingLists();
+      }
       
-      setShowTicket(true);
       setCart([]);
       setSelectedSupplierId('');
       fetchProducts(); // Refrescar inventario
-      if (status === 'PENDING') {
-        setToastMessage('Lista de compras guardada exitosamente');
-        fetchPendingLists();
-      } else {
-        setToastMessage('Inventario actualizado exitosamente');
-      }
       setTimeout(() => setToastMessage(null), 3000);
 
     } catch (error: any) {
