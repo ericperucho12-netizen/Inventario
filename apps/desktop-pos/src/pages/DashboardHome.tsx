@@ -19,7 +19,7 @@ interface DashboardSummary {
   lowStockProducts: number;
   accountsReceivable: number;
   inventoryValue: number;
-  chartData: { date: string; name: string; ventas: number; compras: number }[];
+  chartData: { date: string; name: string; ventas: number; compras: number; gastos: number }[];
   recentSales: any[];
   topProducts: { name: string; totalSold: number; profit: number }[];
 }
@@ -408,7 +408,14 @@ export default function DashboardHome() {
           </div>
           <div className="flex-1 w-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={summary.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart 
+                data={summary.chartData.map(d => ({
+                  ...d,
+                  compras: d.compras > 0 ? -d.compras : d.compras,
+                  gastos: d.gastos > 0 ? -d.gastos : d.gastos
+                }))} 
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={theme === 'light' ? '#00000010' : '#ffffff10'} vertical={false} />
                 <XAxis 
                   dataKey="name" 
@@ -423,13 +430,17 @@ export default function DashboardHome() {
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => value < 0 ? `-$${Math.abs(value)}` : `$${value}`}
                 />
                 <Tooltip
                   cursor={{ fill: theme === 'light' ? '#00000005' : '#ffffff05' }}
                   contentStyle={{ backgroundColor: theme === 'light' ? '#ffffff' : '#0f172a', border: `1px solid ${theme === 'light' ? '#e2e8f0' : '#ffffff10'}`, borderRadius: '12px' }}
                   labelStyle={{ color: theme === 'light' ? '#475569' : '#94a3b8', marginBottom: '4px' }}
-                  formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.charAt(0).toUpperCase() + name.slice(1)]}
+                  formatter={(value: number, name: string) => {
+                    const isNegative = value < 0;
+                    const absValue = Math.abs(value).toFixed(2);
+                    return [isNegative ? `-$${absValue}` : `$${absValue}`, name.charAt(0).toUpperCase() + name.slice(1)];
+                  }}
                 />
                 <Legend wrapperStyle={{ paddingTop: '10px' }} />
                 <Bar dataKey="ventas" name="Ventas" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={40} />
