@@ -127,15 +127,29 @@ export default function Pos() {
     socket.on('inventory-updated', () => {
       // Cuando otro cajero cobra o un proveedor surte, refrescamos el inventario en silencio
       api.get('/products').then(res => {
-        setProducts(res.data);
-        setCachedProducts(res.data);
-        setToastMessage('📦 Inventario actualizado (Tiempo Real)');
-        setTimeout(() => setToastMessage(null), 2500);
+        if (Array.isArray(res.data)) {
+          setProducts(res.data);
+          setCachedProducts(res.data);
+          setToastMessage('📦 Inventario actualizado (Tiempo Real)');
+          setTimeout(() => setToastMessage(null), 2500);
+        }
+      }).catch(err => {
+        console.error('Error auto-updating inventory via socket', err);
       });
     });
 
+    // Auto-refresh when app comes back to foreground (wakes up)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProducts();
+        fetchShiftStatus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       socket.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
