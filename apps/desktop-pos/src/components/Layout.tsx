@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useOfflineStore } from '../store/offline.store';
 import { api } from '../lib/axios';
 import { WifiOff, Wifi, Loader2 } from 'lucide-react';
-import logoImg from '../assets/hallow.png';
+import logoImg from '../assets/logo.png';
 
 export default function Layout() {
   const { user, logout } = useAuthStore();

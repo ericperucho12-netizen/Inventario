@@ -33,13 +33,15 @@ export class PurchasesService {
         const product = await queryRunner.manager.findOneBy(Product, { id: item.productId, companyId });
         if (!product) throw new BadRequestException(`Producto ${item.productId} no encontrado`);
 
-        // Actualizar Stock y Costo
-        product.stock += item.quantity;
-        product.costPrice = item.unitCost;
-        
         // Actualizar Precio de Venta opcionalmente
         if (item.newSellingPrice !== undefined && item.newSellingPrice !== null) {
           product.sellingPrice = item.newSellingPrice;
+        }
+
+        // Solo actualizar stock y costo si la compra NO está pendiente
+        if (createPurchaseDto.status !== 'PENDING') {
+          product.stock += item.quantity;
+          product.costPrice = item.unitCost;
         }
 
         await queryRunner.manager.save(product);
@@ -64,6 +66,9 @@ export class PurchasesService {
       purchase.total = total;
       purchase.userId = userId;
       purchase.details = details;
+      if (createPurchaseDto.status) {
+        purchase.status = createPurchaseDto.status;
+      }
 
       const savedPurchase = await queryRunner.manager.save(purchase);
       
@@ -95,5 +100,44 @@ export class PurchasesService {
     });
     if (!purchase) throw new NotFoundException('Compra no encontrada');
     return purchase;
+  }
+
+  async receive(id: string, companyId: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const purchase = await queryRunner.manager.findOne(Purchase, {
+        where: { id, companyId },
+        relations: ['details', 'details.product']
+      });
+
+      if (!purchase) throw new NotFoundException('Compra no encontrada');
+      if (purchase.status === 'COMPLETED') throw new BadRequestException('Esta compra ya fue recibida');
+
+      // Actualizar stock de cada producto
+      for (const detail of purchase.details) {
+        const product = await queryRunner.manager.findOneBy(Product, { id: detail.productId, companyId });
+        if (product) {
+          product.stock += detail.quantity;
+          product.costPrice = detail.unitCost;
+          await queryRunner.manager.save(product);
+        }
+      }
+
+      purchase.status = 'COMPLETED';
+      const savedPurchase = await queryRunner.manager.save(purchase);
+      
+      await queryRunner.commitTransaction();
+      this.eventsGateway.emitInventoryUpdate(companyId);
+
+      return savedPurchase;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
   }
 }

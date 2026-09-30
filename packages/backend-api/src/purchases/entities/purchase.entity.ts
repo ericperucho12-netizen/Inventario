@@ -31,6 +31,9 @@ export class Purchase {
   @OneToMany('PurchaseDetail', (detail: any) => detail.purchase, { cascade: true })
   details: any[];
 
+  @Column({ default: 'COMPLETED' })
+  status: 'PENDING' | 'COMPLETED';
+
   @CreateDateColumn()
   createdAt: Date;
 }

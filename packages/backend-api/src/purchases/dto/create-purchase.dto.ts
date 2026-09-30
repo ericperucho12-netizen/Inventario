@@ -6,4 +6,5 @@ export class CreatePurchaseDto {
     unitCost: number;
     newSellingPrice?: number;
   }[];
+  status?: 'PENDING' | 'COMPLETED';
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/axios';
 import { 
   Search, Plus, Minus, Trash2, ShoppingCart, 
-  Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer
+  Barcode, Loader2, DollarSign, Building2, TrendingUp, Filter, Printer, ClipboardList, CheckCircle
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSettingsStore } from '../store/settings.store';
@@ -37,6 +37,8 @@ interface CartItem {
 export default function Purchases() {
   const [products, setProducts] = useState<Product[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [activeTab, setActiveTab] = useState<'NEW' | 'LISTS'>('NEW');
+  const [pendingLists, setPendingLists] = useState<any[]>([]);
   
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -69,7 +71,34 @@ export default function Purchases() {
     fetchProducts();
     fetchSuppliers();
     fetchCategories();
+    fetchPendingLists();
   }, []);
+
+  const fetchPendingLists = async () => {
+    try {
+      const res = await api.get('/purchases');
+      const pending = res.data.filter((p: any) => p.status === 'PENDING');
+      setPendingLists(pending);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleReceiveList = async (listId: string) => {
+    if (!window.confirm('¿Confirmas que ya recibiste esta carga? El stock se sumará al inventario.')) return;
+    try {
+      setIsProcessing(true);
+      await api.patch(`/purchases/${listId}/receive`);
+      setToastMessage('Inventario actualizado exitosamente');
+      setTimeout(() => setToastMessage(null), 3000);
+      fetchPendingLists();
+      fetchProducts();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al recibir carga');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   useEffect(() => {
     if (products.length > 0 && location.state?.scannedCode) {
@@ -238,7 +267,7 @@ export default function Purchases() {
     }
   };
 
-  const processPurchase = async () => {
+  const processPurchase = async (status: 'PENDING' | 'COMPLETED' = 'COMPLETED') => {
     if (cart.length === 0) return;
     
     setIsProcessing(true);
@@ -252,7 +281,8 @@ export default function Purchases() {
 
       const payload = { 
         supplierId: selectedSupplierId || undefined,
-        items 
+        items,
+        status
       };
 
       let responseId = '';
@@ -284,7 +314,12 @@ export default function Purchases() {
       setCart([]);
       setSelectedSupplierId('');
       fetchProducts(); // Refrescar inventario
-      setToastMessage('Inventario actualizado exitosamente');
+      if (status === 'PENDING') {
+        setToastMessage('Lista de compras guardada exitosamente');
+        fetchPendingLists();
+      } else {
+        setToastMessage('Inventario actualizado exitosamente');
+      }
       setTimeout(() => setToastMessage(null), 3000);
 
     } catch (error: any) {
@@ -344,7 +379,7 @@ export default function Purchases() {
   });
 
   return (
-    <div className="flex flex-col xl:flex-row min-h-screen xl:h-full bg-slate-950 text-white relative">
+    <div className="flex flex-col h-screen bg-slate-950 text-white relative">
       {/* Global Fetch Loading Overlay */}
       {isFetchingGlobal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
@@ -376,19 +411,37 @@ export default function Purchases() {
         />
       )}
 
+      {/* Header Común (Pestañas) */}
+      <div className="w-full bg-slate-900/50 border-b border-white/10 p-4 shrink-0 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
+          <ShoppingCart className="h-6 w-6 md:h-8 md:w-8 text-blue-500" />
+          Compras e Inventario
+        </h1>
+        <div className="flex gap-2 bg-slate-900 p-1 rounded-lg border border-white/10">
+          <button 
+            onClick={() => setActiveTab('NEW')}
+            className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${activeTab === 'NEW' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white'}`}
+          >
+            Nueva Compra
+          </button>
+          <button 
+            onClick={() => setActiveTab('LISTS')}
+            className={`px-4 py-2 rounded-md font-medium text-sm transition-colors flex items-center gap-2 ${activeTab === 'LISTS' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25' : 'text-slate-400 hover:text-white'}`}
+          >
+            Listas Pendientes
+            {pendingLists.length > 0 && (
+              <span className="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full">{pendingLists.length}</span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col xl:flex-row overflow-hidden relative">
+      {activeTab === 'NEW' ? (
+      <>
       {/* Lado Izquierdo: Buscador y Catálogo */}
       <div className="flex-1 flex flex-col xl:h-full xl:overflow-hidden">
-        <div className="p-4 md:p-6 border-b border-white/10 bg-slate-900/50 shrink-0">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 md:mb-6 gap-2">
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-3">
-              <ShoppingCart className="h-6 w-6 md:h-8 md:w-8 text-blue-500" />
-              Ingresar Compra
-            </h1>
-            <div className="flex items-center gap-2 bg-blue-500/10 text-blue-400 px-4 py-2 rounded-lg font-medium border border-blue-500/20">
-              <Barcode className="h-5 w-5" />
-              {scannerEnabled ? 'Escáner Activo' : 'Escáner Desactivado'}
-            </div>
-          </div>
+        <div className="p-4 md:p-6 border-b border-white/10 shrink-0">
           <div className="flex flex-col md:flex-row gap-3 md:gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
@@ -595,18 +648,76 @@ export default function Purchases() {
             <span className="text-slate-400 font-medium">Total de la Factura</span>
             <span className="text-3xl font-bold text-white">${subtotal.toFixed(2)}</span>
           </div>
-          <button 
-            onClick={(e) => {
-              e.currentTarget.blur();
-              processPurchase();
-            }}
-            disabled={cart.length === 0 || isProcessing}
-            className="w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] bg-blue-500 hover:bg-blue-400 text-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
-          >
-            {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
-            {isProcessing ? 'Procesando...' : 'Registrar Compra y Stock'}
-          </button>
+          <div className="flex flex-col gap-2">
+            <button 
+              onClick={(e) => {
+                e.currentTarget.blur();
+                processPurchase('PENDING');
+              }}
+              disabled={cart.length === 0 || isProcessing}
+              className="w-full py-3 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] bg-slate-800 hover:bg-slate-700 text-white border border-slate-700"
+            >
+              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ClipboardList className="h-5 w-5" />}
+              {isProcessing ? 'Procesando...' : 'Guardar Lista Pendiente'}
+            </button>
+            <button 
+              onClick={(e) => {
+                e.currentTarget.blur();
+                processPurchase('COMPLETED');
+              }}
+              disabled={cart.length === 0 || isProcessing}
+              className="w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] bg-blue-500 hover:bg-blue-400 text-white hover:shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+            >
+              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
+              {isProcessing ? 'Procesando...' : 'Registrar Compra Inmediata'}
+            </button>
+          </div>
         </div>
+      </div>
+      </>
+      ) : (
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+          {pendingLists.length === 0 ? (
+            <div className="text-center text-slate-500 mt-20">
+              <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <p>No hay listas de compras pendientes.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {pendingLists.map(list => (
+                <div key={list.id} className="bg-slate-900 border border-slate-700 rounded-xl p-5 hover:border-slate-500 transition-colors flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <span className="text-xs text-slate-400 block">{new Date(list.createdAt).toLocaleString()}</span>
+                      <h3 className="font-bold text-lg text-white truncate max-w-[200px]">{list.supplier?.name || 'Compra Independiente'}</h3>
+                    </div>
+                    <span className="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded font-medium">Pendiente</span>
+                  </div>
+                  <div className="space-y-2 mb-4 max-h-40 overflow-y-auto custom-scrollbar flex-1">
+                    {list.details.map((detail: any) => (
+                      <div key={detail.id} className="flex justify-between text-sm items-center border-b border-slate-800/50 pb-2 last:border-0">
+                        <span className="text-slate-300 max-w-[150px] truncate">{detail.quantity}x {detail.product?.description}</span>
+                        <span className="text-slate-400">${(detail.quantity * detail.unitCost).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800">
+                    <span className="font-bold text-lg">${Number(list.total).toFixed(2)}</span>
+                    <button
+                      onClick={() => handleReceiveList(list.id)}
+                      disabled={isProcessing}
+                      className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Marcar Recibido
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       </div>
 
       {/* Modal de Ticket de Compra */}
