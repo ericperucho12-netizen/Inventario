@@ -47,7 +47,7 @@ export default function Catalog() {
   const [prodCatId, setProdCatId] = useState('');
   const [prodImageUrl, setProdImageUrl] = useState('');
   const [prodIsBulk, setProdIsBulk] = useState(false);
-  const [prodPresentations, setProdPresentations] = useState<{ name: string; price: number; multiplier: number }[]>([]);
+  const [prodPresentations, setProdPresentations] = useState<{ name: string; price: number | string; multiplier: number | string }[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -150,7 +150,11 @@ export default function Catalog() {
         categoryId: prodCatId,
         imageUrl: prodImageUrl || null,
         isBulk: prodIsBulk,
-        presentations: prodPresentations.length > 0 ? prodPresentations : null
+        presentations: prodPresentations.length > 0 ? prodPresentations.map(p => ({
+          name: p.name,
+          price: Number(p.price),
+          multiplier: Number(p.multiplier)
+        })) : null
       };
       
       if (editingProduct) {
@@ -454,7 +458,7 @@ export default function Catalog() {
                       <label className="block text-sm font-bold text-slate-300">Presentaciones Adicionales (Ej. Caja, Six-Pack)</label>
                       <button 
                         type="button" 
-                        onClick={() => setProdPresentations([...prodPresentations, { name: '', price: 0, multiplier: 1 }])}
+                        onClick={() => setProdPresentations([...prodPresentations, { name: '', price: '', multiplier: '' }])}
                         className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
                       >
                         <Plus className="h-3 w-3" /> Añadir
@@ -470,11 +474,11 @@ export default function Catalog() {
                           <div className="flex gap-2">
                             <div className="w-1/2">
                               <label className="text-[10px] text-slate-500 uppercase font-bold">Piezas a restar</label>
-                              <input required type="number" min="1" step="0.001" placeholder="Pzas" value={pres.multiplier} onChange={e => { const newP = [...prodPresentations]; newP[idx].multiplier = Number(e.target.value); setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
+                              <input required type="number" min="0.001" step="0.001" placeholder="Pzas" value={pres.multiplier} onChange={e => { const newP = [...prodPresentations]; newP[idx].multiplier = e.target.value; setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
                             </div>
                             <div className="w-1/2">
                               <label className="text-[10px] text-slate-500 uppercase font-bold">Precio Venta</label>
-                              <input required type="number" min="0" step="0.01" placeholder="$" value={pres.price} onChange={e => { const newP = [...prodPresentations]; newP[idx].price = Number(e.target.value); setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
+                              <input required type="number" min="0" step="0.01" placeholder="$" value={pres.price} onChange={e => { const newP = [...prodPresentations]; newP[idx].price = e.target.value; setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
                             </div>
                           </div>
                         </div>
