@@ -50,36 +50,40 @@ export default function Reports() {
       return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
     };
 
+    let start = '';
+    let end = '';
+
     if (type === 'today') {
-      setStartDate(formatDate(today));
-      setEndDate(formatDate(today));
+      start = formatDate(today);
+      end = formatDate(today);
     } else if (type === 'yesterday') {
       const yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      setStartDate(formatDate(yesterday));
-      setEndDate(formatDate(yesterday));
+      start = formatDate(yesterday);
+      end = formatDate(yesterday);
     } else if (type === 'week') {
       const firstDay = new Date(today);
-      const day = firstDay.getDay() || 7; // Get current day number, converting Sun(0) to 7
-      if (day !== 1) firstDay.setHours(-24 * (day - 1)); // adjust when day is not monday
-      setStartDate(formatDate(firstDay));
-      setEndDate(formatDate(today));
+      const day = firstDay.getDay() || 7;
+      if (day !== 1) firstDay.setHours(-24 * (day - 1));
+      start = formatDate(firstDay);
+      end = formatDate(today);
     } else if (type === 'month') {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      setStartDate(formatDate(firstDay));
-      setEndDate(formatDate(today));
+      start = formatDate(firstDay);
+      end = formatDate(today);
     }
+
+    setStartDate(start);
+    setEndDate(end);
+    fetchReport(start, end);
   };
 
-  const handleSearch = async () => {
-    if (!startDate || !endDate) {
-      alert('Por favor selecciona ambas fechas');
-      return;
-    }
+  const fetchReport = async (start: string, end: string) => {
+    if (!start || !end) return;
     setLoading(true);
     try {
       const res = await api.get('/reports', {
-        params: { startDate, endDate }
+        params: { startDate: start, endDate: end }
       });
       setData(res.data);
     } catch (error) {
@@ -88,6 +92,14 @@ export default function Reports() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = () => {
+    if (!startDate || !endDate) {
+      alert('Por favor selecciona ambas fechas');
+      return;
+    }
+    fetchReport(startDate, endDate);
   };
 
   const exportToExcel = () => {
