@@ -48,6 +48,7 @@ export default function Pos() {
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'VOUCHER' | 'CREDIT'>('CASH');
+  const [cashReceived, setCashReceived] = useState<number | ''>('');
   const [shiftStatus, setShiftStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showFastAdd, setShowFastAdd] = useState(false);
@@ -388,6 +389,7 @@ export default function Pos() {
         setCart([]);
         setSelectedCustomerId('');
         setPaymentMethod('CASH');
+        setCashReceived('');
         fetchProducts();
         setIsProcessing(false);
         setToastMessage('Deuda asignada al cliente exitosamente.');
@@ -410,6 +412,7 @@ export default function Pos() {
       setCart([]);
       setSelectedCustomerId('');
       setPaymentMethod('CASH');
+      setCashReceived('');
       fetchProducts();
     } catch (error: any) {
       console.error('Error procesando venta:', error);
@@ -781,6 +784,43 @@ export default function Pos() {
             <span className="text-slate-400 font-medium">Total a Cobrar</span>
             <span className="text-3xl font-bold text-white">${subtotal.toFixed(2)}</span>
           </div>
+
+          {paymentMethod === 'CASH' && (
+            <div className="mb-6 p-4 rounded-xl bg-slate-950 border border-white/5">
+              <label className="text-sm text-slate-300 font-medium mb-2 block">Efectivo Recibido</label>
+              <div className="flex gap-2 mb-3">
+                <button onClick={() => setCashReceived(50)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$50</button>
+                <button onClick={() => setCashReceived(100)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$100</button>
+                <button onClick={() => setCashReceived(200)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$200</button>
+                <button onClick={() => setCashReceived(500)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$500</button>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cashReceived}
+                  onChange={(e) => setCashReceived(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Otra cantidad..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-white focus:outline-none focus:border-emerald-500 transition-colors font-medium text-lg"
+                />
+              </div>
+              {cashReceived !== '' && (Number(cashReceived) - subtotal >= 0) && (
+                <div className="mt-4 flex justify-between items-center bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3">
+                  <span className="text-emerald-400 text-sm font-bold">Cambio a entregar:</span>
+                  <span className="text-emerald-400 text-2xl font-bold">${(Number(cashReceived) - subtotal).toFixed(2)}</span>
+                </div>
+              )}
+              {cashReceived !== '' && (Number(cashReceived) - subtotal < 0) && (
+                <div className="mt-4 flex justify-between items-center bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                  <span className="text-red-400 text-sm font-bold">Faltan:</span>
+                  <span className="text-red-400 text-lg font-bold">${Math.abs(Number(cashReceived) - subtotal).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <button 
             onClick={(e) => {
               e.currentTarget.blur();
