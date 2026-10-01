@@ -58,6 +58,7 @@ export default function Pos() {
   const [scannedNotFoundCode, setScannedNotFoundCode] = useState<string | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [presentationModalProduct, setPresentationModalProduct] = useState<Product | null>(null);
+  const [showCashModal, setShowCashModal] = useState(false);
   
   const navigate = useNavigate();
 
@@ -508,6 +509,70 @@ export default function Pos() {
         />
       )}
 
+      {/* Modal Cobro en Efectivo */}
+      {showCashModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl relative animate-in zoom-in-95">
+            <button 
+              onClick={() => { setShowCashModal(false); setCashReceived(''); }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-2">Cobro en Efectivo</h2>
+            <p className="text-sm text-slate-400 mb-6">Total a cobrar: <span className="text-emerald-400 font-bold text-lg">${subtotal.toFixed(2)}</span></p>
+            
+            <div className="mb-6">
+              <label className="text-sm text-slate-300 font-medium mb-2 block">Efectivo Recibido</label>
+              <div className="flex gap-2 mb-3">
+                <button onClick={() => setCashReceived(50)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-2 text-sm font-bold transition-colors shadow-sm">$50</button>
+                <button onClick={() => setCashReceived(100)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-2 text-sm font-bold transition-colors shadow-sm">$100</button>
+                <button onClick={() => setCashReceived(200)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-2 text-sm font-bold transition-colors shadow-sm">$200</button>
+                <button onClick={() => setCashReceived(500)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-2 text-sm font-bold transition-colors shadow-sm">$500</button>
+              </div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  autoFocus
+                  value={cashReceived}
+                  onChange={(e) => setCashReceived(e.target.value === '' ? '' : Number(e.target.value))}
+                  placeholder="Otra cantidad..."
+                  className="w-full bg-slate-950 border border-slate-700 rounded-lg py-3 pl-7 pr-3 text-white focus:outline-none focus:border-emerald-500 transition-colors font-medium text-lg"
+                />
+              </div>
+              
+              {cashReceived !== '' && (Number(cashReceived) - subtotal >= 0) && (
+                <div className="mt-4 flex justify-between items-center bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-4">
+                  <span className="text-emerald-400 font-bold">Cambio a entregar:</span>
+                  <span className="text-emerald-400 text-3xl font-bold">${(Number(cashReceived) - subtotal).toFixed(2)}</span>
+                </div>
+              )}
+              {cashReceived !== '' && (Number(cashReceived) - subtotal < 0) && (
+                <div className="mt-4 flex justify-between items-center bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <span className="text-red-400 text-sm font-bold">Faltan:</span>
+                  <span className="text-red-400 text-xl font-bold">${Math.abs(Number(cashReceived) - subtotal).toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowCashModal(false);
+                processSale();
+              }}
+              disabled={isProcessing || (cashReceived !== '' && Number(cashReceived) < subtotal)}
+              className="w-full py-4 rounded-xl font-bold text-lg bg-emerald-500 hover:bg-emerald-400 text-white transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+              Confirmar Cobro
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modal Selección de Presentación */}
       {presentationModalProduct && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
@@ -785,46 +850,14 @@ export default function Pos() {
             <span className="text-3xl font-bold text-white">${subtotal.toFixed(2)}</span>
           </div>
 
-          {paymentMethod === 'CASH' && (
-            <div className="mb-6 p-4 rounded-xl bg-slate-950 border border-white/5">
-              <label className="text-sm text-slate-300 font-medium mb-2 block">Efectivo Recibido</label>
-              <div className="flex gap-2 mb-3">
-                <button onClick={() => setCashReceived(50)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$50</button>
-                <button onClick={() => setCashReceived(100)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$100</button>
-                <button onClick={() => setCashReceived(200)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$200</button>
-                <button onClick={() => setCashReceived(500)} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg py-1.5 text-sm font-bold transition-colors shadow-sm">$500</button>
-              </div>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value === '' ? '' : Number(e.target.value))}
-                  placeholder="Otra cantidad..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 pl-7 pr-3 text-white focus:outline-none focus:border-emerald-500 transition-colors font-medium text-lg"
-                />
-              </div>
-              {cashReceived !== '' && (Number(cashReceived) - subtotal >= 0) && (
-                <div className="mt-4 flex justify-between items-center bg-emerald-500/20 border border-emerald-500/30 rounded-lg p-3">
-                  <span className="text-emerald-400 text-sm font-bold">Cambio a entregar:</span>
-                  <span className="text-emerald-400 text-2xl font-bold">${(Number(cashReceived) - subtotal).toFixed(2)}</span>
-                </div>
-              )}
-              {cashReceived !== '' && (Number(cashReceived) - subtotal < 0) && (
-                <div className="mt-4 flex justify-between items-center bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                  <span className="text-red-400 text-sm font-bold">Faltan:</span>
-                  <span className="text-red-400 text-lg font-bold">${Math.abs(Number(cashReceived) - subtotal).toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          )}
-
           <button 
             onClick={(e) => {
               e.currentTarget.blur();
-              processSale();
+              if (paymentMethod === 'CASH') {
+                setShowCashModal(true);
+              } else {
+                processSale();
+              }
             }}
             disabled={cart.length === 0 || isProcessing || (paymentMethod === 'CREDIT' && !selectedCustomerId)}
             className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${
