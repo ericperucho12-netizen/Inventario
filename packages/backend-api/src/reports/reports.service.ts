@@ -51,7 +51,7 @@ export class ReportsService {
         for (const detail of sale.details) {
           const qty = Number(detail.quantity);
           const price = Number(detail.unitPrice);
-          const pCost = Number(detail.product?.costPrice || 0);
+          const pCost = Number(detail.unitCost || 0);
           
           const lineRevenue = qty * price;
           const lineCost = qty * pCost;

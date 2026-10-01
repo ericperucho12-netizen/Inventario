@@ -53,7 +53,7 @@ export class SalesService {
         detail.productId = item.productId;
         detail.quantity = item.quantity;
         detail.unitPrice = item.unitPrice;
-        detail.unitCost = product.costPrice; // CONGELAR COSTO
+        detail.unitCost = product.costPrice * (item.multiplier || 1); // CONGELAR COSTO PROPORCIONAL
         detail.subtotal = subtotal;
         detail.presentationName = item.presentationName;
         detail.stockMultiplier = item.multiplier || 1;
