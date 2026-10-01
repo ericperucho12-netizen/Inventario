@@ -1,4 +1,5 @@
-import { Controller, Get, UseGuards, Request, ForbiddenException, Patch, Param, Body } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request, ForbiddenException, Patch, Param, Body, Delete } from '@nestjs/common';
+import { DataSource } from 'typeorm';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,6 +12,7 @@ export class SuperadminController {
   constructor(
     @InjectRepository(Company) private companyRepository: Repository<Company>,
     @InjectRepository(User) private userRepository: Repository<User>,
+    private dataSource: DataSource,
   ) {}
 
   // Middleware manual para asegurar que es SuperAdmin
@@ -102,5 +104,29 @@ export class SuperadminController {
     });
 
     return { success: true };
+  }
+
+  @Delete('companies/:id')
+  async deleteCompany(@Request() req: any, @Param('id') id: string) {
+    this.ensureSuperAdmin(req);
+
+    const company = await this.companyRepository.findOne({ where: { id } });
+    if (!company) throw new ForbiddenException('Empresa no encontrada');
+
+    // Borrar todos los datos transaccionales y luego la empresa con sus usuarios
+    await this.dataSource.query(`DELETE FROM sale_details WHERE "saleId" IN (SELECT id FROM sales WHERE "companyId" = $1)`, [id]);
+    await this.dataSource.query(`DELETE FROM sales WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM purchase_details WHERE "purchaseId" IN (SELECT id FROM purchases WHERE "companyId" = $1)`, [id]);
+    await this.dataSource.query(`DELETE FROM purchases WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM expenses WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM cash_shifts WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM customers WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM suppliers WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM products WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM categories WHERE "companyId" = $1`, [id]);
+    await this.dataSource.query(`DELETE FROM users WHERE "companyId" = $1`, [id]);
+    await this.companyRepository.delete(id);
+
+    return { success: true, message: `Empresa y todos sus datos eliminados.` };
   }
 }

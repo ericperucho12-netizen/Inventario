@@ -73,6 +73,19 @@ export const SuperAdminDashboard = () => {
     }
   };
 
+  const deleteCompany = async (id: string, name: string) => {
+    if (!window.confirm(`⚠️ ¿Estás SEGURO de que deseas ELIMINAR por completo la empresa "${name}"?\n\nEsto borrará TODOS sus datos: ventas, productos, usuarios, etc. Esta acción es IRREVERSIBLE.`)) return;
+    if (!window.confirm(`ÚLTIMA CONFIRMACIÓN: ¿Eliminar definitivamente "${name}" y todos sus datos?`)) return;
+    try {
+      await api.delete(`/superadmin/companies/${id}`);
+      alert(`La empresa "${name}" fue eliminada exitosamente.`);
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      alert('Error al eliminar la empresa');
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500">Cargando panel maestro...</div>;
 
   return (
@@ -152,6 +165,13 @@ export const SuperAdminDashboard = () => {
                       className={`text-sm font-bold px-3 py-2 rounded-lg transition-colors border ${c.isActive ? 'bg-red-600/20 text-red-400 hover:text-white hover:bg-red-600 border-red-600/30' : 'bg-emerald-600/20 text-emerald-400 hover:text-white hover:bg-emerald-600 border-emerald-600/30'}`}
                     >
                       {c.isActive ? 'Suspender' : 'Reactivar'}
+                    </button>
+                    <button
+                      onClick={() => deleteCompany(c.id, c.name)}
+                      className="text-sm font-bold px-3 py-2 rounded-lg transition-colors border bg-rose-900/30 text-rose-400 hover:text-white hover:bg-rose-700 border-rose-700/40"
+                      title="Eliminar empresa y TODOS sus datos permanentemente"
+                    >
+                      🗑 Eliminar
                     </button>
                   </td>
                 </tr>
