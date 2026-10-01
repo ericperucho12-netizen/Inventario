@@ -112,32 +112,33 @@ export class DashboardService {
       .andWhere(companyId ? 'expense.companyId = :companyId' : 'expense.companyId IS NULL', { companyId })
       .getMany();
 
-    // Helper to get local date string YYYY-MM-DD
-    const getLocalDateString = (d: Date) => {
-      const date = new Date(d);
-      const yyyy = date.getFullYear();
-      const mm = String(date.getMonth() + 1).padStart(2, '0');
-      const dd = String(date.getDate()).padStart(2, '0');
+    // Helper to get local date string YYYY-MM-DD in Mexico City
+    const getMexicoDateString = (d: Date) => {
+      const mxString = new Date(d).toLocaleString("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+      const [mm, dd, yyyy] = mxString.split('/');
       return `${yyyy}-${mm}-${dd}`;
     };
 
+    const todayMexicoStr = getMexicoDateString(new Date());
+    const todayNoonUTC = new Date(todayMexicoStr + "T12:00:00Z");
+
     // Fill missing days with 0 and calculate totals
     const chartData = [];
-    for (let i = 0; i < numDays; i++) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      const dateStr = getLocalDateString(d);
+    for (let i = numDays - 1; i >= 0; i--) {
+      const d = new Date(todayNoonUTC);
+      d.setUTCDate(d.getUTCDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
       
-      const daySales = recentSalesChart.filter(s => getLocalDateString(s.createdAt) === dateStr);
-      const dayPurchases = recentPurchasesChart.filter(p => getLocalDateString(p.createdAt) === dateStr);
-      const dayExpenses = recentExpensesChart.filter(e => getLocalDateString(e.createdAt) === dateStr);
+      const daySales = recentSalesChart.filter(s => getMexicoDateString(s.createdAt) === dateStr);
+      const dayPurchases = recentPurchasesChart.filter(p => getMexicoDateString(p.createdAt) === dateStr);
+      const dayExpenses = recentExpensesChart.filter(e => getMexicoDateString(e.createdAt) === dateStr);
 
       const totalVentas = daySales.reduce((acc, curr) => acc + Number(curr.total), 0);
       const totalCompras = dayPurchases.reduce((acc, curr) => acc + Number(curr.total), 0);
       const totalGastos = dayExpenses.reduce((acc, curr) => acc + Number(curr.amount), 0);
       
       // Formatear el día en español para la UI
-      const dayName = d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: numDays > 7 ? 'short' : undefined });
+      const dayName = d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: numDays > 7 ? 'short' : undefined, timeZone: 'UTC' });
 
       chartData.push({
         date: dateStr,

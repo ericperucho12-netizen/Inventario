@@ -8,26 +8,20 @@ export class ReportsService {
   constructor(private dataSource: DataSource) {}
 
   async getReport(startDate: string, endDate: string, companyId: string) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
     // Obtener todas las ventas en el periodo
     const sales = await this.dataSource.manager.find(Sale, {
       where: {
-        companyId: companyId || IsNull(),
-        createdAt: this.dataSource.manager.getRepository(Sale).manager.connection.driver.options.type === 'sqlite' 
-          ? undefined : undefined
+        companyId: companyId || IsNull()
       },
       relations: ['customer', 'details', 'details.product']
     });
 
-    // Filtro manual seguro para fechas
+    // Filtro manual seguro para fechas tomando en cuenta la zona horaria de México
     const filteredSales = sales.filter(s => {
-      const d = new Date(s.createdAt);
-      return d >= start && d <= end;
+      const mxString = new Date(s.createdAt).toLocaleString("en-US", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit" });
+      const [mm, dd, yyyy] = mxString.split('/');
+      const saleDateStr = `${yyyy}-${mm}-${dd}`;
+      return saleDateStr >= startDate && saleDateStr <= endDate;
     });
 
     let totalRevenue = 0;
