@@ -17,6 +17,7 @@ interface OfflinePurchase {
   items: any[];
   total: number;
   date: string;
+  status?: 'PENDING' | 'COMPLETED';
 }
 
 interface OfflineStore {

@@ -15,7 +15,7 @@ export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isSyncing, setIsSyncing] = useState(false);
-  const { pendingSales, clearPendingSales, pendingPurchases, clearPendingPurchases } = useOfflineStore();
+  const { pendingSales, pendingPurchases } = useOfflineStore();
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -54,17 +54,18 @@ export default function Layout() {
           paymentMethod: sale.paymentMethod,
           isCredit: sale.isCredit
         });
+        useOfflineStore.getState().removePendingSale(sale.id);
       }
-      clearPendingSales();
 
       for (const purchase of pendingPurchases) {
         // Enviar cada compra pendiente
         await api.post('/purchases', {
           supplierId: purchase.supplierId,
-          items: purchase.items
+          items: purchase.items,
+          status: purchase.status
         });
+        useOfflineStore.getState().removePendingPurchase(purchase.id);
       }
-      clearPendingPurchases();
 
       console.log('Sincronización completada exitosamente');
     } catch (error) {

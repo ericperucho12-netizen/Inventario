@@ -386,7 +386,8 @@ export default function Purchases() {
           supplierId: payload.supplierId,
           items: payload.items,
           total: subtotal,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          status: payload.status
         });
       } else {
         const response = await api.post('/purchases', payload);
