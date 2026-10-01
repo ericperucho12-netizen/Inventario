@@ -87,4 +87,12 @@ export class UsersService implements OnModuleInit {
     const { passwordHash, ...result } = savedUser;
     return result;
   }
+
+  async deleteUser(id: string, companyId: string): Promise<void> {
+    const user = await this.userRepository.findOne({ where: { id, companyId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado o no pertenece a tu empresa.');
+    if (user.role === Role.PROPIETARIO) throw new ConflictException('No puedes eliminar al propietario principal de la empresa.');
+    
+    await this.userRepository.delete(id);
+  }
 }

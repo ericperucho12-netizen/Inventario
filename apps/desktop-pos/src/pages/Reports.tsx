@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/axios';
+import { useAuthStore } from '../store/auth.store';
 import { 
   BarChart3, Calendar, Download, Loader2, DollarSign, Package, TrendingUp
 } from 'lucide-react';
@@ -28,6 +30,15 @@ export default function Reports() {
   const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ReportData | null>(null);
+  
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role === 'CAJERO') {
+      navigate('/pos');
+    }
+  }, [user, navigate]);
 
   const setQuickDate = (type: 'today' | 'yesterday' | 'week' | 'month') => {
     const today = new Date();

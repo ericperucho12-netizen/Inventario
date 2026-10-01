@@ -6,8 +6,9 @@ import {
 import { 
   TrendingUp, Users, AlertTriangle, Package, Loader2, DollarSign, Calendar, Lock, Unlock, X, Printer, CreditCard, ShoppingCart, Wallet
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '../store/settings.store';
+import { useAuthStore } from '../store/auth.store';
 
 interface DashboardSummary {
   todayTotal: number;
@@ -27,6 +28,8 @@ interface DashboardSummary {
 
 export default function DashboardHome() {
   const { theme } = useSettingsStore();
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('week');
@@ -48,8 +51,12 @@ export default function DashboardHome() {
   , [allProducts, lowStockThreshold]);
 
   useEffect(() => {
+    if (user?.role === 'CAJERO') {
+      navigate('/pos');
+      return;
+    }
     fetchSummary();
-  }, [period]);
+  }, [period, user, navigate]);
 
   const fetchSummary = async () => {
     try {

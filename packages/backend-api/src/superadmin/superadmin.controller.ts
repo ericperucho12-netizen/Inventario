@@ -33,6 +33,15 @@ export class SuperadminController {
     };
   }
 
+  @Get('debug')
+  async getDebug(@Request() req: any) {
+    this.ensureSuperAdmin(req);
+    const users = await this.dataSource.query('SELECT id, username, "companyId" FROM users LIMIT 10');
+    const sales = await this.dataSource.query('SELECT id, "companyId", total FROM sales ORDER BY "createdAt" DESC LIMIT 10');
+    const companies = await this.dataSource.query('SELECT id, name FROM companies LIMIT 10');
+    return { users, sales, companies };
+  }
+
   @Get('companies')
   async getCompanies(@Request() req: any) {
     this.ensureSuperAdmin(req);

@@ -172,18 +172,20 @@ export default function Layout() {
             <span className="md:hidden lg:inline">Caja (Vender)</span>
           </NavLink>
 
-          <NavLink
-            to="/dashboard"
-            onClick={closeMenu}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive ? 'bg-teal-500 text-white font-bold shadow-lg shadow-teal-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            <LayoutDashboard className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
-            <span className="md:hidden lg:inline">Dashboard</span>
-          </NavLink>
+          {user?.role !== 'CAJERO' && (
+            <NavLink
+              to="/dashboard"
+              onClick={closeMenu}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive ? 'bg-teal-500 text-white font-bold shadow-lg shadow-teal-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`
+              }
+            >
+              <LayoutDashboard className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
+              <span className="md:hidden lg:inline">Dashboard</span>
+            </NavLink>
+          )}
 
           <NavLink
             to="/catalog"
@@ -198,31 +200,35 @@ export default function Layout() {
             <span className="md:hidden lg:inline">Productos y Categorías</span>
           </NavLink>
 
-          <NavLink
-            to="/purchases"
-            onClick={closeMenu}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive ? 'bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            <ShoppingCart className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
-            <span className="md:hidden lg:inline">Compras</span>
-          </NavLink>
+          {user?.role !== 'CAJERO' && (
+            <>
+              <NavLink
+                to="/purchases"
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive ? 'bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <ShoppingCart className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
+                <span className="md:hidden lg:inline">Compras</span>
+              </NavLink>
 
-          <NavLink
-            to="/expenses"
-            onClick={closeMenu}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive ? 'bg-orange-500 text-white font-bold shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            <Wallet className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
-            <span className="md:hidden lg:inline">Gastos</span>
-          </NavLink>
+              <NavLink
+                to="/expenses"
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive ? 'bg-orange-500 text-white font-bold shadow-lg shadow-orange-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <Wallet className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
+                <span className="md:hidden lg:inline">Gastos</span>
+              </NavLink>
+            </>
+          )}
 
           <NavLink
             to="/history"
@@ -237,31 +243,35 @@ export default function Layout() {
             <span className="md:hidden lg:inline">Historial</span>
           </NavLink>
 
-          <NavLink
-            to="/reports"
-            onClick={closeMenu}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive ? 'bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            <BarChart3 className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
-            <span className="md:hidden lg:inline">Reportes</span>
-          </NavLink>
+          {user?.role !== 'CAJERO' && (
+            <>
+              <NavLink
+                to="/reports"
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive ? 'bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/20' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <BarChart3 className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
+                <span className="md:hidden lg:inline">Reportes</span>
+              </NavLink>
 
-          <NavLink
-            to="/settings"
-            onClick={closeMenu}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive ? 'bg-slate-700 text-white font-bold shadow-lg shadow-slate-900/50' : 'text-slate-400 hover:text-white hover:bg-white/5'
-              }`
-            }
-          >
-            <Settings className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
-            <span className="md:hidden lg:inline">Configuración</span>
-          </NavLink>
+              <NavLink
+                to="/settings"
+                onClick={closeMenu}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive ? 'bg-slate-700 text-white font-bold shadow-lg shadow-slate-900/50' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                <Settings className="h-6 w-6 lg:h-5 lg:w-5 shrink-0" />
+                <span className="md:hidden lg:inline">Configuración</span>
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="border-t border-white/10 p-4 flex flex-col gap-4 bg-slate-900/80">

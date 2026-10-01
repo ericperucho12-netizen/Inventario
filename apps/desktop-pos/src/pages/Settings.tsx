@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle, Palette, Scale } from 'lucide-react';
+import { Settings as SettingsIcon, Printer, ScanLine, Save, Check, AlertCircle, Palette, Scale, Users as UsersIcon, Plus, Trash2 } from 'lucide-react';
 import { useSettingsStore } from '../store/settings.store';
+import { api } from '../lib/axios';
+import { useAuthStore } from '../store/auth.store';
 
 export default function Settings() {
   const { 
@@ -13,6 +15,11 @@ export default function Settings() {
   const [loadingPrinters, setLoadingPrinters] = useState(false);
   const [isDesktop, setIsDesktop] = useState(true);
   const [saved, setSaved] = useState(false);
+  
+  const { user } = useAuthStore();
+  const [myUsers, setMyUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [newUser, setNewUser] = useState({ username: '', password: '', fullName: '', role: 'CAJERO' });
 
   // Local state for text inputs so we don't cause renders on every keystroke
   const [localStoreName, setLocalStoreName] = useState(storeName);
@@ -41,7 +48,44 @@ export default function Settings() {
     };
 
     fetchPrinters();
-  }, []);
+    if (user?.role !== 'CAJERO') {
+      fetchMyUsers();
+    }
+  }, [user]);
+
+  const fetchMyUsers = async () => {
+    try {
+      setLoadingUsers(true);
+      const res = await api.get('/users/my-users');
+      setMyUsers(res.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/users/my-users', newUser);
+      setNewUser({ username: '', password: '', fullName: '', role: 'CAJERO' });
+      fetchMyUsers();
+      alert('Usuario creado exitosamente');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al crear usuario');
+    }
+  };
+
+  const handleDeleteUser = async (id: string, name: string) => {
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar al usuario ${name}?`)) return;
+    try {
+      await api.delete(`/users/my-users/${id}`);
+      fetchMyUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al eliminar usuario');
+    }
+  };
 
   const handleSave = () => {
     setStoreInfo({ storeName: localStoreName, storeAddress: localStoreAddress, storePhone: localStorePhone });
@@ -276,6 +320,111 @@ export default function Settings() {
             </button>
           </div>
         </section>
+
+        {/* Sección de Usuarios (Solo Propietarios y Administradores) */}
+        {user?.role !== 'CAJERO' && (
+          <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+              <UsersIcon className="h-6 w-6 text-indigo-400" />
+              <h2 className="text-xl font-bold text-white">Gestión de Usuarios (Cajeros)</h2>
+            </div>
+            
+            <p className="text-slate-400 text-sm mb-6">Agrega cuentas para tus empleados. Los cajeros solo podrán vender y hacer corte Z, pero no verán tus reportes ni ganancias totales.</p>
+
+            <form onSubmit={handleCreateUser} className="bg-slate-950 p-4 rounded-xl border border-slate-800 mb-6">
+              <h3 className="text-sm font-bold text-white mb-4">Agregar Nuevo Empleado</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nombre Completo"
+                    value={newUser.fullName}
+                    onChange={(e) => setNewUser({...newUser, fullName: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white text-sm focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Usuario"
+                    value={newUser.username}
+                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white text-sm focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Contraseña"
+                    value={newUser.password}
+                    onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white text-sm focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <select
+                    value={newUser.role}
+                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-white text-sm focus:border-indigo-500"
+                  >
+                    <option value="CAJERO">Cajero (Restringido)</option>
+                    <option value="ADMINISTRADOR">Administrador</option>
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 text-sm w-full md:w-auto">
+                <Plus className="h-4 w-4" /> Crear Usuario
+              </button>
+            </form>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-slate-950 text-slate-400">
+                  <tr>
+                    <th className="px-4 py-3 rounded-tl-lg font-medium">Empleado</th>
+                    <th className="px-4 py-3 font-medium">Usuario</th>
+                    <th className="px-4 py-3 font-medium">Rol</th>
+                    <th className="px-4 py-3 rounded-tr-lg font-medium text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {myUsers.map(u => (
+                    <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                      <td className="px-4 py-3 font-bold text-white">{u.fullName}</td>
+                      <td className="px-4 py-3 text-indigo-400">@{u.username}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
+                          u.role === 'PROPIETARIO' ? 'bg-purple-500/20 text-purple-400' :
+                          u.role === 'ADMINISTRADOR' ? 'bg-blue-500/20 text-blue-400' :
+                          'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {u.role !== 'PROPIETARIO' && user?.id !== u.id && (
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.fullName)}
+                            className="text-red-400 hover:text-red-300 p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title="Eliminar usuario"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {loadingUsers && (
+                    <tr><td colSpan={4} className="text-center py-4">Cargando usuarios...</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
 
         {/* Botón de Guardado (Visual, ya que Zustand guarda automáticamente) */}
         <div className="flex justify-end pt-4">
