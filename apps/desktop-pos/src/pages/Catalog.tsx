@@ -19,6 +19,7 @@ interface Product {
   category: Category;
   imageUrl?: string;
   isBulk?: boolean;
+  presentations?: { name: string; price: number; multiplier: number }[];
 }
 
 export default function Catalog() {
@@ -46,6 +47,7 @@ export default function Catalog() {
   const [prodCatId, setProdCatId] = useState('');
   const [prodImageUrl, setProdImageUrl] = useState('');
   const [prodIsBulk, setProdIsBulk] = useState(false);
+  const [prodPresentations, setProdPresentations] = useState<{ name: string; price: number; multiplier: number }[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -77,6 +79,7 @@ export default function Catalog() {
       setProdCatId('');
       setProdImageUrl('');
       setProdIsBulk(false);
+      setProdPresentations([]);
     } else {
       setCatName('');
       setCatDesc('');
@@ -94,6 +97,7 @@ export default function Catalog() {
     setProdCatId(prod.category?.id || '');
     setProdImageUrl(prod.imageUrl || '');
     setProdIsBulk(prod.isBulk || false);
+    setProdPresentations(prod.presentations || []);
     setIsModalOpen(true);
   };
 
@@ -145,7 +149,8 @@ export default function Catalog() {
         stock: Number(prodStock),
         categoryId: prodCatId,
         imageUrl: prodImageUrl || null,
-        isBulk: prodIsBulk
+        isBulk: prodIsBulk,
+        presentations: prodPresentations.length > 0 ? prodPresentations : null
       };
       
       if (editingProduct) {
@@ -441,6 +446,41 @@ export default function Catalog() {
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Enlace de Foto (URL opcional)</label>
                     <input type="url" placeholder="https://ejemplo.com/foto.jpg" value={prodImageUrl} onChange={e => setProdImageUrl(e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 focus:border-purple-500 focus:outline-none" />
+                  </div>
+
+                  {/* Presentaciones (Cajas, Paquetes) */}
+                  <div className="pt-2 border-t border-slate-700/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-slate-300">Presentaciones Adicionales (Ej. Caja, Six-Pack)</label>
+                      <button 
+                        type="button" 
+                        onClick={() => setProdPresentations([...prodPresentations, { name: '', price: 0, multiplier: 1 }])}
+                        className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                      >
+                        <Plus className="h-3 w-3" /> Añadir
+                      </button>
+                    </div>
+                    {prodPresentations.length === 0 && (
+                      <p className="text-xs text-slate-500">Opcional: Si este producto se vende en cajas u otras formas, añádelas aquí.</p>
+                    )}
+                    {prodPresentations.map((pres, idx) => (
+                      <div key={idx} className="flex gap-2 items-start mb-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50 relative group">
+                        <div className="flex-1">
+                          <input required type="text" placeholder="Ej: Caja de 20pz" value={pres.name} onChange={e => { const newP = [...prodPresentations]; newP[idx].name = e.target.value; setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500 mb-2" />
+                          <div className="flex gap-2">
+                            <div className="w-1/2">
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Piezas a restar</label>
+                              <input required type="number" min="1" step="0.001" placeholder="Pzas" value={pres.multiplier} onChange={e => { const newP = [...prodPresentations]; newP[idx].multiplier = Number(e.target.value); setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
+                            </div>
+                            <div className="w-1/2">
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Precio Venta</label>
+                              <input required type="number" min="0" step="0.01" placeholder="$" value={pres.price} onChange={e => { const newP = [...prodPresentations]; newP[idx].price = Number(e.target.value); setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
+                            </div>
+                          </div>
+                        </div>
+                        <button type="button" onClick={() => { const newP = prodPresentations.filter((_, i) => i !== idx); setProdPresentations(newP); }} className="text-red-400 hover:text-red-300 p-1">✕</button>
+                      </div>
+                    ))}
                   </div>
                 </>
               )}

@@ -40,12 +40,13 @@ export class SalesService {
           throw new BadRequestException(`Producto ${item.productId} no encontrado`);
         }
 
-        if (product.stock < item.quantity) {
+        const totalUnitsDeducted = item.quantity * (item.multiplier || 1);
+        if (product.stock < totalUnitsDeducted) {
           throw new BadRequestException(`No hay suficiente stock para el producto ${product.description}`);
         }
 
         // Descontar inventario
-        product.stock -= item.quantity;
+        product.stock -= totalUnitsDeducted;
         await queryRunner.manager.save(product);
 
         const subtotal = item.quantity * item.unitPrice;
@@ -57,6 +58,8 @@ export class SalesService {
         detail.unitPrice = item.unitPrice;
         detail.unitCost = product.costPrice; // CONGELAR COSTO
         detail.subtotal = subtotal;
+        detail.presentationName = item.presentationName;
+        detail.stockMultiplier = item.multiplier || 1;
         
         saleDetails.push(detail);
       }
@@ -141,7 +144,8 @@ export class SalesService {
       // Revertir inventario
       for (const detail of sale.details) {
         if (detail.product) {
-          detail.product.stock += detail.quantity;
+          const revertAmount = detail.quantity * (detail.stockMultiplier || 1);
+          detail.product.stock += revertAmount;
           await queryRunner.manager.save(detail.product);
         }
       }

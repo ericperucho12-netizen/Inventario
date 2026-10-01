@@ -32,4 +32,10 @@ export class SaleDetail {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   subtotal: number;
+
+  @Column({ nullable: true })
+  presentationName?: string;
+
+  @Column({ type: 'int', default: 1 })
+  stockMultiplier: number;
 }

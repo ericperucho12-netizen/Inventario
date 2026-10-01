@@ -39,6 +39,9 @@ export class Product {
   @Column({ default: true })
   isActive: boolean;
 
+  @Column({ type: 'simple-json', nullable: true })
+  presentations?: any[];
+
   @Column({ type: 'decimal', precision: 10, scale: 3, default: 0, transformer: new ColumnNumericTransformer() })
   stock: number;
 

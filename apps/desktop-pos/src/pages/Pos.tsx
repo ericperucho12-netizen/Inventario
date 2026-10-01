@@ -19,11 +19,16 @@ export interface Product {
   stock: number;
   category: { id: string; name: string };
   imageUrl?: string;
+  presentations?: { name: string; price: number; multiplier: number }[];
 }
 
 interface CartItem {
+  id: string; // Unique ID for cart item (needed for presentations)
   product: Product;
   quantity: number;
+  presentationName?: string;
+  multiplier?: number;
+  price: number;
 }
 
 interface Customer {
@@ -51,6 +56,7 @@ export default function Pos() {
   const [filterCategoryId, setFilterCategoryId] = useState('');
   const [scannedNotFoundCode, setScannedNotFoundCode] = useState<string | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [presentationModalProduct, setPresentationModalProduct] = useState<Product | null>(null);
   
   const navigate = useNavigate();
 
@@ -197,12 +203,21 @@ export default function Pos() {
 
 
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, presentation?: {name: string; price: number; multiplier: number}) => {
+    if (!presentation && product.presentations && product.presentations.length > 0) {
+      setPresentationModalProduct(product);
+      return;
+    }
+
     setCart(prev => {
-      const existing = prev.find(item => item.product.id === product.id);
+      const cartItemId = presentation ? `${product.id}-${presentation.name}` : product.id;
+      const existing = prev.find(item => item.id === cartItemId);
       const currentQuantity = existing ? existing.quantity : 0;
       
-      if (currentQuantity + 1 > product.stock) {
+      const multiplier = presentation?.multiplier || 1;
+      const totalUnitsRequested = (currentQuantity + 1) * multiplier;
+
+      if (totalUnitsRequested > product.stock) {
         setToastMessage(`❌ No hay suficiente stock de ${product.description}`);
         setTimeout(() => setToastMessage(null), 3000);
         return prev;
@@ -210,20 +225,29 @@ export default function Pos() {
 
       if (existing) {
         return prev.map(item => 
-          item.product.id === product.id 
+          item.id === cartItemId 
             ? { ...item, quantity: item.quantity + 1 } 
             : item
         );
       }
-      return [...prev, { product, quantity: 1 }];
+      return [...prev, { 
+        id: cartItemId,
+        product, 
+        quantity: 1, 
+        presentationName: presentation?.name,
+        multiplier: presentation?.multiplier,
+        price: presentation?.price || product.sellingPrice
+      }];
     });
+    setPresentationModalProduct(null);
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (cartItemId: string, delta: number) => {
     setCart(prev => prev.map(item => {
-      if (item.product.id === productId) {
+      if (item.id === cartItemId) {
         const newQuantity = Math.max(0.001, item.quantity + delta);
-        if (newQuantity > item.product.stock) {
+        const multiplier = item.multiplier || 1;
+        if (newQuantity * multiplier > item.product.stock) {
           setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
           return item;
@@ -234,10 +258,11 @@ export default function Pos() {
     }));
   };
 
-  const setExactQuantity = (productId: string, exactQty: number) => {
+  const setExactQuantity = (cartItemId: string, exactQty: number) => {
     setCart(prev => prev.map(item => {
-      if (item.product.id === productId) {
-        if (exactQty > item.product.stock) {
+      if (item.id === cartItemId) {
+        const multiplier = item.multiplier || 1;
+        if (exactQty * multiplier > item.product.stock) {
           setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
           return item;
@@ -304,11 +329,11 @@ export default function Pos() {
     }
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.product.id !== productId));
+  const removeFromCart = (cartItemId: string) => {
+    setCart(prev => prev.filter(item => item.id !== cartItemId));
   };
 
-  const subtotal = cart.reduce((acc, item) => acc + (item.product.sellingPrice * item.quantity), 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
   const processSale = async () => {
     if (cart.length === 0) return;
@@ -318,7 +343,9 @@ export default function Pos() {
       const items = cart.map(item => ({
         productId: item.product.id,
         quantity: item.quantity,
-        unitPrice: item.product.sellingPrice
+        unitPrice: item.price,
+        presentationName: item.presentationName,
+        multiplier: item.multiplier
       }));
 
       const payload: any = { 
@@ -478,6 +505,55 @@ export default function Pos() {
         />
       )}
 
+      {/* Modal Selección de Presentación */}
+      {presentationModalProduct && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl relative">
+            <button 
+              onClick={() => setPresentationModalProduct(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-2">Selecciona Presentación</h2>
+            <p className="text-sm text-slate-400 mb-6">{presentationModalProduct.description}</p>
+            
+            <div className="space-y-3">
+              {/* Default Presentation (Suelto/Pieza) */}
+              <button
+                onClick={() => addToCart(presentationModalProduct, undefined)}
+                className="w-full text-left p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group flex items-center justify-between"
+              >
+                <div>
+                  <h3 className="font-bold text-white">Unidad (Suelto/Base)</h3>
+                  <p className="text-xs text-emerald-400/80">Descuenta 1 unidad</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-emerald-400">${presentationModalProduct.sellingPrice}</p>
+                </div>
+              </button>
+
+              {/* Extra Presentations */}
+              {presentationModalProduct.presentations?.map((pres, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => addToCart(presentationModalProduct, pres)}
+                  className="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors group flex items-center justify-between"
+                >
+                  <div>
+                    <h3 className="font-bold text-white">{pres.name}</h3>
+                    <p className="text-xs text-purple-400/80">Descuenta {pres.multiplier} unidades</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-purple-400">${pres.price}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Lado Izquierdo: Catálogo y Búsqueda */}
       <div className="flex-1 flex flex-col p-4 md:p-6 xl:h-full xl:overflow-hidden">
         <div className="mb-4 lg:mb-6 flex flex-col md:flex-row gap-3 lg:gap-4">
@@ -588,7 +664,7 @@ export default function Pos() {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.product.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group flex gap-3">
+              <div key={item.id} className="p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors group flex gap-3">
                 {item.product.imageUrl && (
                   <div className="shrink-0 w-12 h-12 rounded bg-white/5 p-1 flex items-center justify-center">
                     <img src={item.product.imageUrl} alt={item.product.description} className="max-w-full max-h-full object-contain" />
@@ -596,22 +672,24 @@ export default function Pos() {
                 )}
                 <div className="flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-3 gap-2 overflow-hidden">
-                    <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">{item.product.description}</h4>
-                    <p className="font-bold text-emerald-400 shrink-0">${(item.product.sellingPrice * item.quantity).toFixed(2)}</p>
+                    <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">
+                      {item.product.description} {item.presentationName ? `(${item.presentationName})` : ''}
+                    </h4>
+                    <p className="font-bold text-emerald-400 shrink-0">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400">${item.product.sellingPrice} c/u</p>
+                  <p className="text-xs text-slate-400">${item.price} c/u</p>
                   <div className="flex items-center gap-3">
-                    {scaleEnabled && (
+                    {scaleEnabled && !item.presentationName && (
                       <button 
-                        onClick={() => handleReadScale(item.product.id)} 
+                        onClick={() => handleReadScale(item.id)} 
                         className="p-1 rounded bg-green-500/20 hover:bg-green-500/30 transition-colors text-green-400 mr-2"
                         title="Leer peso desde báscula"
                       >
                         <Scale className="h-4 w-4" />
                       </button>
                     )}
-                    <button onClick={() => updateQuantity(item.product.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
+                    <button onClick={() => updateQuantity(item.id, -1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
                       <Minus className="h-4 w-4" />
                     </button>
                     <input 
@@ -622,15 +700,15 @@ export default function Pos() {
                       onChange={(e) => {
                         const val = parseFloat(e.target.value);
                         if (!isNaN(val)) {
-                          setExactQuantity(item.product.id, val);
+                          setExactQuantity(item.id, val);
                         }
                       }}
                       className="w-16 bg-slate-950 border border-slate-700 rounded text-center text-sm font-semibold text-white py-1 focus:outline-none focus:border-emerald-500 appearance-none m-0"
                     />
-                    <button onClick={() => updateQuantity(item.product.id, 1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
+                    <button onClick={() => updateQuantity(item.id, 1)} className="p-1 rounded bg-slate-800 hover:bg-slate-700 transition-colors text-slate-300">
                       <Plus className="h-4 w-4" />
                     </button>
-                    <button onClick={() => removeFromCart(item.product.id)} className="p-1 rounded bg-red-500/10 hover:bg-red-500/20 transition-colors text-red-400 ml-2">
+                    <button onClick={() => removeFromCart(item.id)} className="p-1 rounded bg-red-500/10 hover:bg-red-500/20 transition-colors text-red-400 ml-2">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -763,8 +841,10 @@ export default function Pos() {
                     {ticketData.items.map((item, idx) => (
                       <tr key={idx}>
                         <td className="pt-2 align-top">{item.quantity}</td>
-                        <td className="pt-2 align-top break-words pr-2">{item.product.description}</td>
-                        <td className="pt-2 align-top text-right">${(item.quantity * item.product.sellingPrice).toFixed(2)}</td>
+                        <td className="pt-2 align-top break-words pr-2">
+                          {item.product.description} {item.presentationName ? `(${item.presentationName})` : ''}
+                        </td>
+                        <td className="pt-2 align-top text-right">${(item.quantity * item.price).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

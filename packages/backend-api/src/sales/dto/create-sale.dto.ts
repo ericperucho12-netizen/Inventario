@@ -3,6 +3,8 @@ export class CreateSaleDto {
     productId: string;
     quantity: number;
     unitPrice: number;
+    presentationName?: string;
+    multiplier?: number;
   }[];
   isCredit?: boolean;
   customerId?: string;
