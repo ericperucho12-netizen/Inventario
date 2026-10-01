@@ -19,15 +19,13 @@ export interface Product {
   stock: number;
   category: { id: string; name: string };
   imageUrl?: string;
-  presentations?: { name: string; price: number; multiplier: number }[];
+  canUnpack?: boolean;
 }
 
 interface CartItem {
-  id: string; // Unique ID for cart item (needed for presentations)
+  id: string;
   product: Product;
   quantity: number;
-  presentationName?: string;
-  multiplier?: number;
   price: number;
 }
 
@@ -57,7 +55,6 @@ export default function Pos() {
   const [filterCategoryId, setFilterCategoryId] = useState('');
   const [scannedNotFoundCode, setScannedNotFoundCode] = useState<string | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
-  const [presentationModalProduct, setPresentationModalProduct] = useState<Product | null>(null);
   const [showCashModal, setShowCashModal] = useState(false);
   
   const navigate = useNavigate();
@@ -205,19 +202,13 @@ export default function Pos() {
 
 
 
-  const addToCart = (product: Product, presentation?: {name: string; price: number; multiplier: number}) => {
-    if (!presentation && product.presentations && product.presentations.length > 0 && presentationModalProduct?.id !== product.id) {
-      setPresentationModalProduct(product);
-      return;
-    }
-
+  const addToCart = (product: Product) => {
     setCart(prev => {
-      const cartItemId = presentation ? `${product.id}-${presentation.name}` : product.id;
+      const cartItemId = product.id;
       const existing = prev.find(item => item.id === cartItemId);
       const currentQuantity = existing ? existing.quantity : 0;
       
-      const multiplier = presentation?.multiplier || 1;
-      const totalUnitsRequested = (currentQuantity + 1) * multiplier;
+      const totalUnitsRequested = currentQuantity + 1;
 
       if (totalUnitsRequested > product.stock) {
         setToastMessage(`❌ No hay suficiente stock de ${product.description}`);
@@ -236,20 +227,16 @@ export default function Pos() {
         id: cartItemId,
         product, 
         quantity: 1, 
-        presentationName: presentation?.name,
-        multiplier: presentation?.multiplier,
-        price: presentation?.price || product.sellingPrice
+        price: product.sellingPrice
       }];
     });
-    setPresentationModalProduct(null);
   };
 
   const updateQuantity = (cartItemId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === cartItemId) {
         const newQuantity = Math.max(0.001, item.quantity + delta);
-        const multiplier = item.multiplier || 1;
-        if (newQuantity * multiplier > item.product.stock) {
+        if (newQuantity > item.product.stock) {
           setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
           return item;
@@ -263,8 +250,7 @@ export default function Pos() {
   const setExactQuantity = (cartItemId: string, exactQty: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === cartItemId) {
-        const multiplier = item.multiplier || 1;
-        if (exactQty * multiplier > item.product.stock) {
+        if (exactQty > item.product.stock) {
           setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
           return item;
@@ -345,9 +331,7 @@ export default function Pos() {
       const items = cart.map(item => ({
         productId: item.product.id,
         quantity: item.quantity,
-        unitPrice: item.price,
-        presentationName: item.presentationName,
-        multiplier: item.multiplier
+        unitPrice: item.price
       }));
 
       const payload: any = { 
@@ -573,55 +557,6 @@ export default function Pos() {
         </div>
       )}
 
-      {/* Modal Selección de Presentación */}
-      {presentationModalProduct && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl relative">
-            <button 
-              onClick={() => setPresentationModalProduct(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            <h2 className="text-xl font-bold text-white mb-2">Selecciona Presentación</h2>
-            <p className="text-sm text-slate-400 mb-6">{presentationModalProduct.description}</p>
-            
-            <div className="space-y-3">
-              {/* Default Presentation (Suelto/Pieza) */}
-              <button
-                onClick={() => addToCart(presentationModalProduct, undefined)}
-                className="w-full text-left p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group flex items-center justify-between"
-              >
-                <div>
-                  <h3 className="font-bold text-white">Por Defecto (Base)</h3>
-                  <p className="text-xs text-emerald-400/80">Descuenta 1 de inventario</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-emerald-400">${presentationModalProduct.sellingPrice}</p>
-                </div>
-              </button>
-
-              {/* Extra Presentations */}
-              {presentationModalProduct.presentations?.map((pres, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => addToCart(presentationModalProduct, pres)}
-                  className="w-full text-left p-4 rounded-xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/20 transition-colors group flex items-center justify-between"
-                >
-                  <div>
-                    <h3 className="font-bold text-white">{pres.name}</h3>
-                    <p className="text-xs text-purple-400/80">Descuenta {pres.multiplier} de inventario</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-purple-400">${pres.price}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Lado Izquierdo: Catálogo y Búsqueda */}
       <div className="flex-1 flex flex-col p-4 md:p-6 xl:h-full xl:overflow-hidden">
         <div className="mb-4 lg:mb-6 flex flex-col md:flex-row gap-3 lg:gap-4">
@@ -699,17 +634,8 @@ export default function Pos() {
                 <h3 className="font-semibold text-white mb-1 line-clamp-2 w-full break-words">{product.description}</h3>
                 <span className="text-[10px] text-slate-500 mb-2 block w-full truncate" title={product.category?.name}>{product.category?.name}</span>
                 
-                <div className="mt-auto w-full flex flex-col gap-1 w-full bg-black/20 p-2 rounded-lg">
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-xs text-slate-300">Base:</span>
-                    <span className="text-base font-bold text-emerald-400">${product.sellingPrice}</span>
-                  </div>
-                  {product.presentations?.map((p, idx) => (
-                    <div key={idx} className="flex justify-between items-center w-full border-t border-white/5 pt-1">
-                      <span className="text-[10px] text-slate-400 truncate pr-1">{p.name}:</span>
-                      <span className="text-sm font-bold text-purple-400">${p.price}</span>
-                    </div>
-                  ))}
+                <div className="mt-auto w-full flex justify-between items-end gap-2 overflow-hidden">
+                  <p className="text-xl font-bold text-emerald-400 shrink-0">${product.sellingPrice}</p>
                 </div>
               </button>
             ))}
