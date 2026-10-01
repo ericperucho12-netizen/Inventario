@@ -74,9 +74,9 @@ export default function Expenses() {
         <p className="text-slate-400 mt-1 text-sm lg:text-base">Registra gastos menores como desayunos, limpieza, papelería, etc.</p>
       </header>
 
-      <div className="flex-1 p-4 lg:p-8 lg:pt-4 flex flex-col lg:flex-row gap-6 overflow-hidden">
+      <div className="flex-1 p-4 lg:p-8 lg:pt-4 flex flex-col lg:flex-row gap-6 overflow-y-auto lg:overflow-hidden pb-24 lg:pb-8">
         {/* Formulario */}
-        <div className="w-full lg:w-[400px] flex flex-col gap-6 shrink-0 overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-[400px] flex flex-col gap-6 shrink-0 lg:overflow-y-auto custom-scrollbar">
             <div className="bg-slate-900/50 border border-white/5 rounded-2xl p-6 backdrop-blur-sm shadow-2xl">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Plus className="h-5 w-5 text-orange-500" /> Nuevo Gasto
@@ -155,7 +155,7 @@ export default function Expenses() {
           </div>
 
           {/* Lista de Gastos */}
-          <div className="flex-1 bg-slate-900/50 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-sm shadow-2xl">
+          <div className="flex-1 min-h-[500px] lg:min-h-0 bg-slate-900/50 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-sm shadow-2xl">
             <div className="p-4 border-b border-white/5 flex items-center justify-between bg-slate-900">
               <h2 className="font-bold text-slate-300">Historial de Gastos</h2>
               <span className="text-xs bg-slate-800 text-slate-400 px-3 py-1 rounded-full">{expenses.length} registros</span>
