@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, IsNull } from 'typeorm';
 import { Sale } from '../sales/entities/sale.entity.js';
 import { SaleDetail } from '../sales/entities/sale-detail.entity.js';
 
@@ -17,7 +17,7 @@ export class ReportsService {
     // Obtener todas las ventas en el periodo
     const sales = await this.dataSource.manager.find(Sale, {
       where: {
-        companyId,
+        companyId: companyId || IsNull(),
         createdAt: this.dataSource.manager.getRepository(Sale).manager.connection.driver.options.type === 'sqlite' 
           ? undefined : undefined
       },
