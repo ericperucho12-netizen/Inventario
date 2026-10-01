@@ -11,7 +11,8 @@ export class DashboardService {
   constructor(private dataSource: DataSource) {}
 
   async getSummary(companyId: string, period: string = 'week') {
-    const today = new Date();
+    const nowMexico = new Date().toLocaleString("en-US", {timeZone: "America/Mexico_City"});
+    const today = new Date(nowMexico);
     today.setHours(0, 0, 0, 0);
 
     const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);

@@ -42,7 +42,13 @@ export default function Reports() {
 
   const setQuickDate = (type: 'today' | 'yesterday' | 'week' | 'month') => {
     const today = new Date();
-    const formatDate = (date: Date) => date.toISOString().split('T')[0];
+    const formatDate = (date: Date) => {
+      const d = new Date(date);
+      const month = '' + (d.getMonth() + 1);
+      const day = '' + d.getDate();
+      const year = d.getFullYear();
+      return [year, month.padStart(2, '0'), day.padStart(2, '0')].join('-');
+    };
 
     if (type === 'today') {
       setStartDate(formatDate(today));

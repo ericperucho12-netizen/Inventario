@@ -94,6 +94,22 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const handleWipeData = async () => {
+    const code = window.prompt('ATENCIÓN: Esto eliminará TODAS las ventas, gastos, cortes de caja y cuentas por cobrar de tu negocio (Tus productos y categorías NO se borrarán).\n\nEscribe "BORRAR" para confirmar:');
+    if (code !== 'BORRAR') {
+      if (code !== null) alert('Código incorrecto. No se borró nada.');
+      return;
+    }
+    
+    try {
+      const res = await api.delete('/dashboard/wipe-data');
+      alert(res.data.message || 'Datos borrados correctamente');
+      window.location.reload();
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Error al borrar los datos');
+    }
+  };
+
   return (
     <div className="p-8 max-w-4xl mx-auto h-full overflow-auto">
       <header className="mb-8">
@@ -422,6 +438,31 @@ export default function Settings() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </section>
+        )}
+
+        {/* Sección de Peligro (Limpiar Datos) */}
+        {user?.role === 'PROPIETARIO' && (
+          <section className="bg-red-950/20 border border-red-500/20 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-red-500/10">
+              <AlertCircle className="h-6 w-6 text-red-500" />
+              <h2 className="text-xl font-bold text-red-500">Zona de Peligro</h2>
+            </div>
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div>
+                <h3 className="font-bold text-white mb-1">Limpiar Datos de Prueba (Dejar en Cero)</h3>
+                <p className="text-sm text-red-200/60 max-w-lg">
+                  Si estuviste haciendo pruebas, usa este botón para eliminar todas las ventas, gastos y cortes de caja. 
+                  <strong className="text-red-400"> Tus productos y clientes seguirán intactos.</strong>
+                </p>
+              </div>
+              <button
+                onClick={handleWipeData}
+                className="w-full md:w-auto bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <Trash2 className="h-5 w-5" /> Dejar en Cero
+              </button>
             </div>
           </section>
         )}
