@@ -427,7 +427,7 @@ export default function Customers() {
         </div>
       </header>
 
-      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden">
+      <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-x-auto custom-scrollbar">
         {loading ? (
           <div className="p-12 flex justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
