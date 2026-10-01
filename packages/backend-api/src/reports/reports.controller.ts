@@ -9,12 +9,13 @@ export class ReportsController {
 
   @Get()
   getReport(
+    @Request() req: any,
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string
   ) {
     if (!startDate || !endDate) {
       return { error: 'Se requieren fechas de inicio y fin' };
     }
-    return this.reportsService.getReport(startDate, endDate);
+    return this.reportsService.getReport(startDate, endDate, req.user.companyId);
   }
 }

@@ -7,7 +7,7 @@ import { SaleDetail } from '../sales/entities/sale-detail.entity.js';
 export class ReportsService {
   constructor(private dataSource: DataSource) {}
 
-  async getReport(startDate: string, endDate: string) {
+  async getReport(startDate: string, endDate: string, companyId: string) {
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
     
@@ -17,9 +17,8 @@ export class ReportsService {
     // Obtener todas las ventas en el periodo
     const sales = await this.dataSource.manager.find(Sale, {
       where: {
+        companyId,
         createdAt: this.dataSource.manager.getRepository(Sale).manager.connection.driver.options.type === 'sqlite' 
-          // SQLite uses raw comparison better or Between isn't perfectly supported in all TypeORM versions with SQLite dates. 
-          // We will use QueryBuilder for safety.
           ? undefined : undefined
       },
       relations: ['customer', 'details', 'details.product']
