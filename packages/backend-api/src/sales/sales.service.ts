@@ -41,8 +41,11 @@ export class SalesService {
         }
 
         const totalUnitsDeducted = item.quantity * (item.multiplier || 1);
+        if (product.stock < totalUnitsDeducted) {
+          throw new BadRequestException(`No hay suficiente stock para el producto ${product.description}`);
+        }
         
-        // Permitir ventas en negativo (descontar de todos modos)
+        // Descontar inventario
         product.stock -= totalUnitsDeducted;
         await queryRunner.manager.save(product);
 

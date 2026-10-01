@@ -206,7 +206,7 @@ export default function Pos() {
 
 
   const addToCart = (product: Product, presentation?: {name: string; price: number; multiplier: number}) => {
-    if (!presentation && product.presentations && product.presentations.length > 0) {
+    if (!presentation && product.presentations && product.presentations.length > 0 && presentationModalProduct?.id !== product.id) {
       setPresentationModalProduct(product);
       return;
     }
@@ -220,8 +220,9 @@ export default function Pos() {
       const totalUnitsRequested = (currentQuantity + 1) * multiplier;
 
       if (totalUnitsRequested > product.stock) {
-        setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
+        setToastMessage(`❌ No hay suficiente stock de ${product.description}`);
         setTimeout(() => setToastMessage(null), 3000);
+        return prev;
       }
 
       if (existing) {
@@ -249,8 +250,9 @@ export default function Pos() {
         const newQuantity = Math.max(0.001, item.quantity + delta);
         const multiplier = item.multiplier || 1;
         if (newQuantity * multiplier > item.product.stock) {
-          setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
+          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
+          return item;
         }
         return { ...item, quantity: Number(newQuantity.toFixed(3)) };
       }
@@ -263,10 +265,11 @@ export default function Pos() {
       if (item.id === cartItemId) {
         const multiplier = item.multiplier || 1;
         if (exactQty * multiplier > item.product.stock) {
-          setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
+          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
           setTimeout(() => setToastMessage(null), 3000);
+          return item;
         }
-        return { ...item, quantity: Math.max(0.001, exactQty) };
+        return { ...item, quantity: exactQty };
       }
       return item;
     }));
@@ -770,12 +773,16 @@ export default function Pos() {
                     <input 
                       type="number"
                       step="0.001"
-                      min="0.001"
-                      value={item.quantity}
+                      min="0"
+                      value={item.quantity === 0 ? '' : item.quantity}
                       onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) {
-                          setExactQuantity(item.id, val);
+                        if (e.target.value === '') {
+                          setExactQuantity(item.id, 0);
+                        } else {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) {
+                            setExactQuantity(item.id, val);
+                          }
                         }
                       }}
                       className="w-16 bg-slate-950 border border-slate-700 rounded text-center text-sm font-semibold text-white py-1 focus:outline-none focus:border-emerald-500 appearance-none m-0"
