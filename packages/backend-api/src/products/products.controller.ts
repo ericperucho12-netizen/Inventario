@@ -48,4 +48,16 @@ export class ProductsController {
     this.eventsGateway.emitInventoryUpdate(req.user.companyId);
     return product;
   }
+
+  @Post(':id/unpack')
+  @HttpCode(200)
+  async unpack(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { targetId: string; units: number }
+  ) {
+    const result = await this.productsService.unpackProduct(id, body.targetId, body.units, req.user.companyId);
+    this.eventsGateway.emitInventoryUpdate(req.user.companyId);
+    return result;
+  }
 }

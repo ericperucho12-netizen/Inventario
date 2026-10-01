@@ -102,4 +102,23 @@ export class ProductsService {
     product.stock = newStock;
     return this.productRepository.save(product);
   }
+
+  async unpackProduct(sourceId: string, targetId: string, unitsObtained: number, companyId: string): Promise<{source: Product, target: Product}> {
+    return this.dataSource.transaction(async (manager) => {
+      const source = await manager.findOne(Product, { where: { id: sourceId, companyId, isActive: true } });
+      const target = await manager.findOne(Product, { where: { id: targetId, companyId, isActive: true } });
+      
+      if (!source) throw new NotFoundException('Producto origen no encontrado');
+      if (!target) throw new NotFoundException('Producto destino no encontrado');
+      if (source.stock < 1) throw new ConflictException('No hay suficiente stock en el origen (caja) para abrir.');
+
+      source.stock = Number(source.stock) - 1;
+      target.stock = Number(target.stock) + unitsObtained;
+
+      await manager.save(source);
+      await manager.save(target);
+
+      return { source, target };
+    });
+  }
 }

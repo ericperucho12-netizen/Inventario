@@ -57,6 +57,12 @@ export default function Catalog() {
   const [adjustReason, setAdjustReason] = useState('');
   const [isAdjusting, setIsAdjusting] = useState(false);
 
+  // Unpack state
+  const [unpackSource, setUnpackSource] = useState<Product | null>(null);
+  const [unpackTargetId, setUnpackTargetId] = useState('');
+  const [unpackUnits, setUnpackUnits] = useState('');
+  const [isUnpacking, setIsUnpacking] = useState(false);
+
   // Autofill logic for global catalog
   useEffect(() => {
     if (!editingProduct && prodBarcode && COMMON_PRODUCTS[prodBarcode]) {
@@ -188,6 +194,26 @@ export default function Catalog() {
       alert('Error ajustando el inventario.');
     } finally {
       setIsAdjusting(false);
+    }
+  };
+
+  const handleUnpackProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!unpackSource || !unpackTargetId) return;
+    const units = parseFloat(unpackUnits);
+    if (isNaN(units) || units <= 0) { alert('Ingresa cantidad válida'); return; }
+    
+    setIsUnpacking(true);
+    try {
+      await api.post(`/products/${unpackSource.id}/unpack`, { targetId: unpackTargetId, units });
+      setUnpackSource(null);
+      setUnpackTargetId('');
+      setUnpackUnits('');
+      fetchData();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Error al abrir caja.');
+    } finally {
+      setIsUnpacking(false);
     }
   };
 
@@ -357,6 +383,13 @@ export default function Catalog() {
                       title="Ajustar Stock"
                     >
                       Ajustar
+                    </button>
+                    <button 
+                      onClick={() => { setUnpackSource(prod); setUnpackTargetId(''); setUnpackUnits(''); }}
+                      className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors mr-4"
+                      title="Abrir Caja / Desarmar"
+                    >
+                      Abrir Caja
                     </button>
                     <button 
                       onClick={() => handleDeleteProduct(prod.id, prod.description)}
@@ -573,6 +606,78 @@ export default function Catalog() {
                 >
                   {isAdjusting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Confirmar Ajuste
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ABRIR CAJA (DESARMAR) */}
+      {unpackSource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-purple-500/20 text-purple-400 rounded-xl">
+                <PackageOpen className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Abrir Caja / Empaque</h2>
+                <p className="text-xs text-slate-400 truncate max-w-[220px]">Desarmar: {unpackSource.description}</p>
+              </div>
+            </div>
+            
+            <p className="text-sm text-slate-300 mb-4">
+              Esta acción descontará <strong className="text-white">1 unidad</strong> de este empaque y sumará las piezas que indiques al producto destino.
+            </p>
+
+            <form onSubmit={handleUnpackProduct} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Producto destino (ej. Cigarro Suelto)</label>
+                <select
+                  required
+                  value={unpackTargetId}
+                  onChange={e => setUnpackTargetId(e.target.value)}
+                  className="w-full rounded-lg border border-slate-700 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none"
+                >
+                  <option value="">Selecciona el producto...</option>
+                  {products.filter(p => p.id !== unpackSource.id).map(p => (
+                    <option key={p.id} value={p.id}>{p.description}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  Piezas obtenidas (al abrir la caja)
+                </label>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  required
+                  placeholder="Ej: 20"
+                  value={unpackUnits}
+                  onChange={e => setUnpackUnits(e.target.value)}
+                  className="w-full rounded-lg border border-purple-500/30 bg-slate-800 p-2 text-white focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setUnpackSource(null)}
+                  className="flex-1 rounded-lg border border-slate-700 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUnpacking}
+                  className="flex-1 rounded-lg bg-purple-500 py-2 text-sm font-bold text-white hover:bg-purple-400 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isUnpacking ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Confirmar Apertura
                 </button>
               </div>
             </form>
