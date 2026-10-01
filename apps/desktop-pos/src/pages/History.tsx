@@ -6,8 +6,9 @@ import { useSettingsStore } from '../store/settings.store';
 export default function History() {
   const [sales, setSales] = useState<any[]>([]);
   const [purchases, setPurchases] = useState<any[]>([]);
+  const [cashShifts, setCashShifts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'sales' | 'purchases'>('sales');
+  const [activeTab, setActiveTab] = useState<'sales' | 'purchases' | 'shifts'>('sales');
 
   const { defaultPrinter } = useSettingsStore();
   const ticketRef = useRef<HTMLDivElement>(null);
@@ -46,11 +47,25 @@ export default function History() {
     }
   };
 
+  const fetchCashShifts = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get('/cash-shifts');
+      setCashShifts(res.data);
+    } catch (error) {
+      console.error('Error fetching cash shifts', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'sales') {
       fetchSales();
-    } else {
+    } else if (activeTab === 'purchases') {
       fetchPurchases();
+    } else if (activeTab === 'shifts') {
+      fetchCashShifts();
     }
   }, [activeTab]);
 
@@ -174,6 +189,14 @@ export default function History() {
         >
           Compras a Proveedores
         </button>
+        <button 
+          onClick={() => setActiveTab('shifts')}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeTab === 'shifts' ? 'bg-blue-500 text-white' : 'bg-slate-900 text-slate-400 hover:text-white'
+          }`}
+        >
+          Cortes de Caja
+        </button>
       </div>
 
       <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm flex-1 flex flex-col overflow-hidden">
@@ -243,7 +266,7 @@ export default function History() {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : activeTab === 'purchases' ? (
           <div className="flex-1 overflow-auto custom-scrollbar">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-900/50 text-slate-300 sticky top-0 z-10 backdrop-blur-sm">
@@ -286,6 +309,66 @@ export default function History() {
                   <tr>
                     <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
                       No hay compras a proveedores registradas en el último mes.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-auto custom-scrollbar">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-900/50 text-slate-300 sticky top-0 z-10 backdrop-blur-sm">
+                <tr>
+                  <th className="px-6 py-4 font-medium">Apertura</th>
+                  <th className="px-6 py-4 font-medium">Cierre</th>
+                  <th className="px-6 py-4 font-medium text-right">Fondo Inicial</th>
+                  <th className="px-6 py-4 font-medium text-right">Efectivo Físico</th>
+                  <th className="px-6 py-4 font-medium text-right">Sistema Esperaba</th>
+                  <th className="px-6 py-4 font-medium text-center">Estado</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {cashShifts.map((shift) => (
+                  <tr key={shift.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium text-white">{new Date(shift.openedAt).toLocaleDateString()}</span>
+                        <span className="text-xs text-slate-400">{new Date(shift.openedAt).toLocaleTimeString()}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {shift.closedAt ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-white">{new Date(shift.closedAt).toLocaleDateString()}</span>
+                          <span className="text-xs text-slate-400">{new Date(shift.closedAt).toLocaleTimeString()}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 italic">No cerrado</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium text-slate-300">
+                      ${Number(shift.initialAmount).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-white">
+                      ${shift.declaredAmount !== null ? Number(shift.declaredAmount).toFixed(2) : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-right font-bold text-slate-400">
+                      ${shift.systemAmount !== null ? Number(shift.systemAmount).toFixed(2) : '-'}
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        shift.status === 'OPEN' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {shift.status === 'OPEN' ? 'ABIERTO' : 'CERRADO'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {cashShifts.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                      No hay cortes de caja registrados.
                     </td>
                   </tr>
                 )}

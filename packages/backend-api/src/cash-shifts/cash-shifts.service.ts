@@ -80,4 +80,12 @@ export class CashShiftsService {
       salesCount: sales.length
     };
   }
+
+  async findAll(companyId: string) {
+    return this.dataSource.manager.find(CashShift, {
+      where: { companyId },
+      order: { openedAt: 'DESC' },
+      take: 50
+    });
+  }
 }

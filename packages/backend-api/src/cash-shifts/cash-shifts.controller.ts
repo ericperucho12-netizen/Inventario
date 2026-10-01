@@ -28,4 +28,9 @@ export class CashShiftsController {
   getMetrics(@Request() req: any) {
     return this.cashShiftsService.getMetrics(req.user.companyId);
   }
+
+  @Get()
+  findAll(@Request() req: any) {
+    return this.cashShiftsService.findAll(req.user.companyId);
+  }
 }
