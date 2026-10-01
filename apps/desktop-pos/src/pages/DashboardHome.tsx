@@ -53,6 +53,10 @@ export default function DashboardHome() {
 
   const fetchSummary = async () => {
     try {
+      try {
+        await api.post('/dashboard/migrate-data');
+      } catch(e) {}
+      
       const [summaryRes, shiftRes] = await Promise.all([
         api.get(`/dashboard/summary?period=${period}`),
         api.get('/cash-shifts/metrics')
