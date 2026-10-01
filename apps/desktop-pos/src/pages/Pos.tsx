@@ -220,9 +220,8 @@ export default function Pos() {
       const totalUnitsRequested = (currentQuantity + 1) * multiplier;
 
       if (totalUnitsRequested > product.stock) {
-        setToastMessage(`❌ No hay suficiente stock de ${product.description}`);
+        setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
         setTimeout(() => setToastMessage(null), 3000);
-        return prev;
       }
 
       if (existing) {
@@ -250,9 +249,8 @@ export default function Pos() {
         const newQuantity = Math.max(0.001, item.quantity + delta);
         const multiplier = item.multiplier || 1;
         if (newQuantity * multiplier > item.product.stock) {
-          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
+          setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
           setTimeout(() => setToastMessage(null), 3000);
-          return item;
         }
         return { ...item, quantity: Number(newQuantity.toFixed(3)) };
       }
@@ -265,9 +263,8 @@ export default function Pos() {
       if (item.id === cartItemId) {
         const multiplier = item.multiplier || 1;
         if (exactQty * multiplier > item.product.stock) {
-          setToastMessage(`❌ No hay suficiente stock de ${item.product.description}`);
+          setToastMessage(`⚠️ Stock insuficiente. La venta se registrará en negativo.`);
           setTimeout(() => setToastMessage(null), 3000);
-          return item;
         }
         return { ...item, quantity: Math.max(0.001, exactQty) };
       }
@@ -593,8 +590,8 @@ export default function Pos() {
                 className="w-full text-left p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors group flex items-center justify-between"
               >
                 <div>
-                  <h3 className="font-bold text-white">Unidad (Suelto/Base)</h3>
-                  <p className="text-xs text-emerald-400/80">Descuenta 1 unidad</p>
+                  <h3 className="font-bold text-white">Por Defecto (Base)</h3>
+                  <p className="text-xs text-emerald-400/80">Descuenta 1 de inventario</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold text-emerald-400">${presentationModalProduct.sellingPrice}</p>
@@ -610,7 +607,7 @@ export default function Pos() {
                 >
                   <div>
                     <h3 className="font-bold text-white">{pres.name}</h3>
-                    <p className="text-xs text-purple-400/80">Descuenta {pres.multiplier} unidades</p>
+                    <p className="text-xs text-purple-400/80">Descuenta {pres.multiplier} de inventario</p>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-purple-400">${pres.price}</p>
@@ -696,10 +693,20 @@ export default function Pos() {
                   </div>
                 )}
                 
-                <h3 className="font-semibold text-white mb-2 line-clamp-2 w-full break-words">{product.description}</h3>
-                <div className="mt-auto w-full flex justify-between items-end gap-2 overflow-hidden">
-                  <p className="text-xl font-bold text-emerald-400 shrink-0">${product.sellingPrice}</p>
-                  <span className="text-xs text-slate-500 text-right line-clamp-2 leading-tight" title={product.category?.name}>{product.category?.name}</span>
+                <h3 className="font-semibold text-white mb-1 line-clamp-2 w-full break-words">{product.description}</h3>
+                <span className="text-[10px] text-slate-500 mb-2 block w-full truncate" title={product.category?.name}>{product.category?.name}</span>
+                
+                <div className="mt-auto w-full flex flex-col gap-1 w-full bg-black/20 p-2 rounded-lg">
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-xs text-slate-300">Base:</span>
+                    <span className="text-base font-bold text-emerald-400">${product.sellingPrice}</span>
+                  </div>
+                  {product.presentations?.map((p, idx) => (
+                    <div key={idx} className="flex justify-between items-center w-full border-t border-white/5 pt-1">
+                      <span className="text-[10px] text-slate-400 truncate pr-1">{p.name}:</span>
+                      <span className="text-sm font-bold text-purple-400">${p.price}</span>
+                    </div>
+                  ))}
                 </div>
               </button>
             ))}

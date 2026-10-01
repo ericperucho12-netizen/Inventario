@@ -465,7 +465,7 @@ export default function Catalog() {
                       </button>
                     </div>
                     {prodPresentations.length === 0 && (
-                      <p className="text-xs text-slate-500">Opcional: Si este producto se vende en cajas u otras formas, añádelas aquí.</p>
+                      <p className="text-xs text-slate-500">Opcional: Si este producto se vende en cajas u otras formas, añádelas aquí. Tu inventario será la "Base" por defecto.</p>
                     )}
                     {prodPresentations.map((pres, idx) => (
                       <div key={idx} className="flex gap-2 items-start mb-2 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50 relative group">
@@ -473,7 +473,7 @@ export default function Catalog() {
                           <input required type="text" placeholder="Ej: Caja de 20pz" value={pres.name} onChange={e => { const newP = [...prodPresentations]; newP[idx].name = e.target.value; setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500 mb-2" />
                           <div className="flex gap-2">
                             <div className="w-1/2">
-                              <label className="text-[10px] text-slate-500 uppercase font-bold">Piezas a restar</label>
+                              <label className="text-[10px] text-slate-500 uppercase font-bold">Resta de Inventario</label>
                               <input required type="number" min="0.001" step="0.001" placeholder="Pzas" value={pres.multiplier} onChange={e => { const newP = [...prodPresentations]; newP[idx].multiplier = e.target.value; setProdPresentations(newP); }} className="w-full text-xs rounded border border-slate-700 bg-slate-900 p-1.5 focus:border-purple-500" />
                             </div>
                             <div className="w-1/2">
