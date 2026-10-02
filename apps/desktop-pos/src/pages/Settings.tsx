@@ -8,8 +8,9 @@ export default function Settings() {
   const { 
     defaultPrinter, scannerEnabled, scaleEnabled, theme, 
     storeName, storeAddress, storePhone, taxRate,
+    transferClabe, transferPhone, transferAlias,
     setDefaultPrinter, setScannerEnabled, setScaleEnabled, setTheme,
-    setStoreInfo, setTaxRate 
+    setStoreInfo, setTaxRate, setTransferInfo
   } = useSettingsStore();
   const [printers, setPrinters] = useState<{ name: string; isDefault: boolean }[]>([]);
   const [loadingPrinters, setLoadingPrinters] = useState(false);
@@ -26,6 +27,9 @@ export default function Settings() {
   const [localStoreAddress, setLocalStoreAddress] = useState(storeAddress);
   const [localStorePhone, setLocalStorePhone] = useState(storePhone);
   const [localTaxRate, setLocalTaxRate] = useState(taxRate.toString());
+  const [localTransferClabe, setLocalTransferClabe] = useState(transferClabe);
+  const [localTransferPhone, setLocalTransferPhone] = useState(transferPhone);
+  const [localTransferAlias, setLocalTransferAlias] = useState(transferAlias);
 
   useEffect(() => {
     // Check if we are in Electron
@@ -90,6 +94,7 @@ export default function Settings() {
   const handleSave = () => {
     setStoreInfo({ storeName: localStoreName, storeAddress: localStoreAddress, storePhone: localStorePhone });
     setTaxRate(Number(localTaxRate) || 0);
+    setTransferInfo({ transferClabe: localTransferClabe, transferPhone: localTransferPhone, transferAlias: localTransferAlias });
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
@@ -186,6 +191,66 @@ export default function Settings() {
             <p className="text-slate-500 text-sm mt-2">Este porcentaje se usará para calcular el desglose de impuestos en reportes y tickets futuros.</p>
           </div>
         </section>
+
+        {/* Sección de Cobro por Transferencia / CoDi */}
+        <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+            <span className="text-2xl">📱</span>
+            <div>
+              <h2 className="text-xl font-bold text-white">Pago por Transferencia / CoDi</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Al cobrar con transferencia, se mostrará un QR con estos datos para que el cliente escanee</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-sm font-medium text-slate-300 mb-2 block">CLABE Interbancaria (18 dígitos)</label>
+              <input
+                type="text"
+                value={localTransferClabe}
+                onChange={(e) => setLocalTransferClabe(e.target.value)}
+                placeholder="Ej. 014180012345678901"
+                maxLength={18}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Teléfono CoDi (10 dígitos)</label>
+              <input
+                type="text"
+                value={localTransferPhone}
+                onChange={(e) => setLocalTransferPhone(e.target.value)}
+                placeholder="Ej. 5512345678"
+                maxLength={10}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-purple-500 transition-colors font-mono"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-slate-300 mb-2 block">Nombre del titular / Alias</label>
+              <input
+                type="text"
+                value={localTransferAlias}
+                onChange={(e) => setLocalTransferAlias(e.target.value)}
+                placeholder="Ej. Juan Pérez / Tienda Lupita"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:outline-none focus:border-purple-500 transition-colors"
+              />
+            </div>
+          </div>
+          {(localTransferClabe || localTransferPhone) && (
+            <div className="mt-4 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center gap-4">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(localTransferClabe || localTransferPhone)}&size=80x80&bgcolor=1e1e2e&color=a855f7`}
+                alt="QR Preview"
+                className="w-20 h-20 rounded-lg border border-purple-500/30"
+              />
+              <div>
+                <p className="text-sm font-bold text-purple-400">Vista previa del QR</p>
+                <p className="text-xs text-slate-400 mt-1">Este QR aparecerá en pantalla cuando el cliente pague por transferencia</p>
+                {localTransferAlias && <p className="text-xs text-white mt-1 font-medium">{localTransferAlias}</p>}
+              </div>
+            </div>
+          )}
+        </section>
+
         {/* Sección de Impresoras */}
         <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">

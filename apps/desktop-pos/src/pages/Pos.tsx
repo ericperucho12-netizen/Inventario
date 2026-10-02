@@ -62,7 +62,7 @@ export default function Pos() {
   const ticketRef = useRef<HTMLDivElement>(null);
   
   // Custom Settings
-  const { defaultPrinter, scannerEnabled, scaleEnabled, storeName, storeAddress, storePhone, taxRate } = useSettingsStore();
+  const { defaultPrinter, scannerEnabled, scaleEnabled, storeName, storeAddress, storePhone, taxRate, transferClabe, transferPhone, transferAlias } = useSettingsStore();
   const barcodeBuffer = useRef('');
   const lastKeyTime = useRef(Date.now());
   const { cachedProducts, setCachedProducts, cachedCustomers, setCachedCustomers, addPendingSale } = useOfflineStore();
@@ -493,6 +493,47 @@ export default function Pos() {
           }}
           onClose={() => setShowCameraScanner(false)}
         />
+      )}
+
+      {/* Modal QR Transferencia */}
+      {paymentMethod === 'TRANSFER' && cart.length > 0 && (transferClabe || transferPhone) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-xs rounded-2xl border border-purple-500/30 bg-slate-900 p-6 shadow-2xl relative text-center">
+            <button 
+              onClick={() => setPaymentMethod('CASH')}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="mb-4">
+              <span className="text-3xl">📱</span>
+              <h2 className="text-xl font-bold text-white mt-2">Pagar por Transferencia</h2>
+              {transferAlias && <p className="text-sm text-purple-400 font-medium">{transferAlias}</p>}
+            </div>
+            <div className="flex justify-center mb-4">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(transferClabe || transferPhone)}&size=200x200&bgcolor=0f172a&color=a855f7&margin=8`}
+                alt="QR de transferencia"
+                className="w-48 h-48 rounded-xl border-2 border-purple-500/40"
+              />
+            </div>
+            {transferClabe && (
+              <p className="text-xs text-slate-400 mb-1">CLABE: <span className="font-mono text-white">{transferClabe}</span></p>
+            )}
+            {transferPhone && (
+              <p className="text-xs text-slate-400 mb-4">Tel CoDi: <span className="font-mono text-white">{transferPhone}</span></p>
+            )}
+            <p className="text-2xl font-bold text-emerald-400 mb-6">${subtotal.toFixed(2)}</p>
+            <button
+              onClick={() => processSale()}
+              disabled={isProcessing}
+              className="w-full py-3 rounded-xl font-bold bg-purple-500 hover:bg-purple-400 text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CheckCircle2 className="h-5 w-5" />}
+              Confirmar Transferencia
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Modal Cobro en Efectivo */}
