@@ -356,37 +356,53 @@ export default function DashboardHome() {
         </Link>
 
         {/* Utilidades (Ganancias Reales) */}
-        <div className={`bg-slate-900/50 border rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group ${
-          (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
-            ? 'border-red-500/30 hover:border-red-500/50' 
-            : 'border-emerald-500/20 hover:border-emerald-500/40'
-        } transition-all`}>
-          <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-xl transition-all ${
-            (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
-              ? 'bg-red-500/10 group-hover:bg-red-500/20' 
-              : 'bg-emerald-500/10 group-hover:bg-emerald-500/20'
-          }`}></div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className={`p-3 rounded-xl ${
-              (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 
-                ? 'bg-red-500/20 text-red-400' 
-                : 'bg-emerald-500/20 text-emerald-400'
-            }`}>
-              <TrendingUp className="h-6 w-6" />
+        {(() => {
+          const netUtil = (summary.monthProfit || 0) - (summary.monthExpenses || 0) - (summary.monthPurchases || 0);
+          const isNegative = netUtil < 0;
+          return (
+            <div className={`bg-slate-900/50 border rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group ${
+              isNegative 
+                ? 'border-red-500/30 hover:border-red-500/50' 
+                : 'border-emerald-500/20 hover:border-emerald-500/40'
+            } transition-all`}>
+              <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full blur-xl transition-all ${
+                isNegative 
+                  ? 'bg-red-500/10 group-hover:bg-red-500/20' 
+                  : 'bg-emerald-500/10 group-hover:bg-emerald-500/20'
+              }`}></div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className={`p-3 rounded-xl ${
+                  isNegative ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                }`}>
+                  <TrendingUp className="h-6 w-6" />
+                </div>
+                <h3 className="text-slate-400 font-medium">Utilidad Neta Real</h3>
+              </div>
+              <p className={`text-3xl font-bold mb-1 ${isNegative ? 'text-red-400' : 'text-emerald-400'}`}>
+                {isNegative ? '-' : ''}${Math.abs(netUtil).toFixed(2)}
+              </p>
+              <div className="mt-auto space-y-1">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Margen ventas</span>
+                  <span className="text-emerald-400/70">+${(summary.monthProfit || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Compras</span>
+                  <span className="text-red-400/70">-${(summary.monthPurchases || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Gastos</span>
+                  <span className="text-orange-400/70">-${(summary.monthExpenses || 0).toFixed(2)}</span>
+                </div>
+              </div>
+              <span className={`text-xs mt-2 font-medium ${
+                isNegative ? 'text-red-400/70' : 'text-emerald-400/50'
+              }`}>
+                {isNegative ? '¡Estás en pérdidas este mes!' : 'Ganancia - Compras - Gastos'}
+              </span>
             </div>
-            <h3 className="text-slate-400 font-medium">Utilidad Neta Real</h3>
-          </div>
-          <p className={`text-3xl font-bold mb-1 ${
-            (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? 'text-red-400' : 'text-emerald-400'
-          }`}>
-            {((summary.monthProfit || 0) - (summary.monthExpenses || 0)) < 0 ? '-' : ''}${Math.abs((summary.monthProfit || 0) - (summary.monthExpenses || 0)).toFixed(2)}
-          </p>
-          <span className={`text-xs mt-auto ${
-             (summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? 'text-red-400/70' : 'text-emerald-400/50'
-          }`}>
-            {(summary.monthProfit || 0) - (summary.monthExpenses || 0) < 0 ? '¡Estás en pérdidas!' : 'Ganancia - Gastos'}
-          </span>
-        </div>
+          );
+        })()}
 
         {/* Cuentas por Cobrar */}
         <div className="bg-slate-900/50 border border-amber-500/20 rounded-2xl p-6 backdrop-blur-sm flex flex-col relative overflow-hidden group">
