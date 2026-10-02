@@ -68,16 +68,17 @@ export default function Pos() {
   const { cachedProducts, setCachedProducts, cachedCustomers, setCachedCustomers, addPendingSale } = useOfflineStore();
 
   const fetchProducts = async () => {
-    if (!navigator.onLine && cachedProducts.length > 0) {
+    // Mostrar caché inmediatamente para que no haya pantalla en blanco
+    if (cachedProducts.length > 0) {
       setProducts(cachedProducts);
-      return;
     }
+    if (!navigator.onLine) return;
     try {
       const res = await api.get('/products');
       setProducts(res.data);
       setCachedProducts(res.data);
     } catch (e) {
-      if (cachedProducts.length > 0) setProducts(cachedProducts);
+      if (cachedProducts.length === 0) setProducts([]);
     }
   };
 
@@ -90,10 +91,11 @@ export default function Pos() {
   };
 
   const fetchCustomers = async () => {
-    if (!navigator.onLine && cachedCustomers.length > 0) {
+    // Mostrar caché inmediatamente
+    if (cachedCustomers.length > 0) {
       setCustomers(cachedCustomers);
-      return;
     }
+    if (!navigator.onLine) return;
     try {
       const res = await api.get('/customers');
       setCustomers(res.data);
@@ -677,14 +679,14 @@ export default function Pos() {
                 <div className="flex-1 flex flex-col">
                   <div className="flex justify-between items-start mb-3 gap-2 overflow-hidden">
                     <h4 className="font-medium text-sm leading-tight pr-2 line-clamp-2 break-words flex-1">
-                      {item.product.description} {item.presentationName ? `(${item.presentationName})` : ''}
+                      {item.product.description}
                     </h4>
                     <p className="font-bold text-emerald-400 shrink-0">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400">${item.price} c/u</p>
                   <div className="flex items-center gap-3">
-                    {scaleEnabled && !item.presentationName && (
+                    {scaleEnabled && (
                       <button 
                         onClick={() => handleReadScale(item.id)} 
                         className="p-1 rounded bg-green-500/20 hover:bg-green-500/30 transition-colors text-green-400 mr-2"
@@ -855,7 +857,7 @@ export default function Pos() {
                       <tr key={idx}>
                         <td className="pt-2 align-top">{item.quantity}</td>
                         <td className="pt-2 align-top break-words pr-2">
-                          {item.product.description} {item.presentationName ? `(${item.presentationName})` : ''}
+                          {item.product.description}
                         </td>
                         <td className="pt-2 align-top text-right">${(item.quantity * item.price).toFixed(2)}</td>
                       </tr>
