@@ -56,6 +56,13 @@ export default function Pos() {
   const [scannedNotFoundCode, setScannedNotFoundCode] = useState<string | null>(null);
   const [showCameraScanner, setShowCameraScanner] = useState(false);
   const [showCashModal, setShowCashModal] = useState(false);
+
+  // Báscula en vivo
+  const [scaleConnected, setScaleConnected] = useState(false);
+  const [scaleWeight, setScaleWeight] = useState<number | null>(null);
+  const scalePortRef = useRef<any>(null);
+  const scaleReaderRef = useRef<any>(null);
+  const scaleActiveRef = useRef(false);
   
   const navigate = useNavigate();
 
@@ -263,59 +270,75 @@ export default function Pos() {
     }));
   };
 
-  const handleReadScale = async (productId: string) => {
-    try {
-      if ('serial' in navigator) {
-        // Pedir al usuario que seleccione el puerto COM de la báscula
-        const port = await (navigator as any).serial.requestPort();
-        await port.open({ baudRate: 9600 }); // 9600 es el estándar en básculas Torrey/Rhino
-        
-        const reader = port.readable.getReader();
-        let accumulated = '';
-        
-        // Timeout de seguridad (5 segundos) si la báscula no envía datos
-        setTimeout(() => {
-          reader.cancel();
-        }, 5000);
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) {
-            reader.releaseLock();
-            break;
-          }
-          accumulated += new TextDecoder().decode(value);
-          
-          // Las básculas suelen enviar el peso terminado en salto de línea o "kg"
-          if (accumulated.includes('\\n') || accumulated.includes('\\r') || accumulated.includes('kg')) {
-            const match = accumulated.match(/([0-9]+\\.?[0-9]*)/); // Extraer los números
-            if (match) {
-              const weight = parseFloat(match[1]);
-              if (weight > 0) {
-                setExactQuantity(productId, weight);
-                reader.cancel(); // Terminar lectura
-                await port.close();
-                return;
-              }
-            }
-            accumulated = ''; 
-          }
-        }
-        await port.close();
-      }
-    } catch (error) {
-      console.warn('Fallo al leer puerto serial o no soportado, usando modo manual.', error);
+  // Conectar/desconectar báscula en modo continuo
+  const connectScale = async () => {
+    if (scaleConnected) {
+      // Desconectar
+      scaleActiveRef.current = false;
+      try { scaleReaderRef.current?.cancel(); } catch {}
+      try { scalePortRef.current?.close(); } catch {}
+      scalePortRef.current = null;
+      scaleReaderRef.current = null;
+      setScaleConnected(false);
+      setScaleWeight(null);
+      return;
     }
 
-    // Modo Manual (Fallback) si no hay conexión o hubo error
-    const weight = window.prompt("No se detectó báscula o hubo un error. Ingresa el peso exacto leído (ej. 1.250):", "1.000");
+    if (!('serial' in navigator)) {
+      alert('Tu navegador no soporta Web Serial API.\nUsa Google Chrome o Microsoft Edge.');
+      return;
+    }
+
+    try {
+      const port = await (navigator as any).serial.requestPort();
+      await port.open({ baudRate: 9600, dataBits: 8, parity: 'none', stopBits: 1 });
+      scalePortRef.current = port;
+      scaleActiveRef.current = true;
+      setScaleConnected(true);
+      setToastMessage('⚖️ Báscula conectada. Poniendo en escucha continua...');
+      setTimeout(() => setToastMessage(null), 3000);
+
+      // Leer continuamente en segundo plano
+      const readLoop = async () => {
+        const reader = port.readable.getReader();
+        scaleReaderRef.current = reader;
+        let buf = '';
+        try {
+          while (scaleActiveRef.current) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += new TextDecoder().decode(value);
+            // Buscar número al final de una línea (formato Torrey: "  1.250 kg\r\n")
+            if (buf.includes('\n') || buf.includes('\r')) {
+              const match = buf.match(/([0-9]+\.?[0-9]*)/);
+              if (match) {
+                const w = parseFloat(match[1]);
+                setScaleWeight(w > 0 ? w : null);
+              }
+              buf = '';
+            }
+          }
+        } catch { /* port closed */ }
+        finally { reader.releaseLock(); }
+      };
+      readLoop();
+    } catch (err) {
+      console.warn('No se pudo conectar a la báscula:', err);
+      setToastMessage('❌ No se pudo conectar. Verifica que el driver está instalado.');
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
+  const handleReadScale = async (productId: string) => {
+    if (scaleConnected && scaleWeight !== null) {
+      setExactQuantity(productId, scaleWeight);
+      return;
+    }
+    // Fallback manual
+    const weight = window.prompt('Ingresa el peso manualmente (ej. 1.250):', '1.000');
     if (weight !== null) {
       const numWeight = parseFloat(weight);
-      if (!isNaN(numWeight) && numWeight > 0) {
-        setExactQuantity(productId, numWeight);
-      } else {
-        alert("Peso inválido.");
-      }
+      if (!isNaN(numWeight) && numWeight > 0) setExactQuantity(productId, numWeight);
     }
   };
 
@@ -459,7 +482,9 @@ export default function Pos() {
     const matchesSearch = p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           p.barcode.includes(searchTerm);
     const matchesCategory = filterCategoryId ? p.category?.id === filterCategoryId : true;
-    return matchesSearch && matchesCategory;
+    // Auto-filtrar a granel si la báscula está activa con peso
+    const matchesBulk = (scaleConnected && scaleWeight !== null && scaleWeight > 0) ? (p as any).isBulk === true : true;
+    return matchesSearch && matchesCategory && matchesBulk;
   });
 
   if (shiftStatus === 'CLOSED') {
@@ -628,6 +653,20 @@ export default function Pos() {
           
           
           <div className="flex gap-3 lg:gap-4 shrink-0">
+            {scaleEnabled && (
+              <button
+                onClick={connectScale}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-3 font-medium transition-colors shrink-0 ${
+                  scaleConnected 
+                    ? 'bg-green-500/20 text-green-400 border-green-500/40 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/40' 
+                    : 'bg-slate-900 text-slate-400 border-white/10 hover:bg-slate-800'
+                }`}
+                title={scaleConnected ? 'Desconectar báscula' : 'Conectar báscula'}
+              >
+                <Scale className="h-5 w-5" />
+                <span className="hidden md:inline">{scaleConnected ? 'Báscula ON' : 'Báscula'}</span>
+              </button>
+            )}
             <div className="relative flex-1 md:w-48">
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
             <select
@@ -652,6 +691,31 @@ export default function Pos() {
             </Link>
           </div>
         </div>
+
+        {/* Indicador de peso en vivo */}
+        {scaleConnected && (
+          <div className={`mb-4 p-3 rounded-xl border flex items-center justify-between ${
+            scaleWeight !== null && scaleWeight > 0
+              ? 'bg-green-500/10 border-green-500/30 text-green-400'
+              : 'bg-slate-800/50 border-white/10 text-slate-400'
+          }`}>
+            <div className="flex items-center gap-3">
+              <Scale className="h-5 w-5" />
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide opacity-70">Peso detectado</p>
+                <p className="text-2xl font-bold">
+                  {scaleWeight !== null && scaleWeight > 0 ? `${scaleWeight.toFixed(3)} kg` : 'Esperando...'}
+                </p>
+              </div>
+            </div>
+            {scaleWeight !== null && scaleWeight > 0 && (
+              <div className="text-right">
+                <p className="text-xs opacity-70">Mostrando solo productos a granel</p>
+                <p className="text-xs font-bold">Selecciona el producto →</p>
+              </div>
+            )}
+          </div>
+        )}
         
         <div className="flex-1 overflow-y-auto max-h-[55vh] xl:max-h-none pr-2 custom-scrollbar pb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
