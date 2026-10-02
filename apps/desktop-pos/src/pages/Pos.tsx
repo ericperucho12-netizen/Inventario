@@ -20,6 +20,8 @@ export interface Product {
   category: { id: string; name: string };
   imageUrl?: string;
   canUnpack?: boolean;
+  wholesaleMinQuantity?: number;
+  wholesalePrice?: number;
 }
 
 interface CartItem {
@@ -45,7 +47,7 @@ export default function Pos() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'VOUCHER' | 'CREDIT'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT'>('CASH');
   const [cashReceived, setCashReceived] = useState<number | ''>('');
   const [shiftStatus, setShiftStatus] = useState<'OPEN' | 'CLOSED' | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -211,6 +213,14 @@ export default function Pos() {
 
 
 
+  // Determina el precio según la cantidad (Mayoreo o Normal)
+  const getEffectivePrice = (product: Product, quantity: number) => {
+    if (product.wholesaleMinQuantity && product.wholesalePrice && quantity >= product.wholesaleMinQuantity) {
+      return product.wholesalePrice;
+    }
+    return product.sellingPrice;
+  };
+
   const addToCart = (product: Product) => {
     setCart(prev => {
       const cartItemId = product.id;
@@ -225,10 +235,12 @@ export default function Pos() {
         return prev;
       }
 
+      const effectivePrice = getEffectivePrice(product, totalUnitsRequested);
+
       if (existing) {
         return prev.map(item => 
           item.id === cartItemId 
-            ? { ...item, quantity: item.quantity + 1 } 
+            ? { ...item, quantity: item.quantity + 1, price: effectivePrice } 
             : item
         );
       }
@@ -236,7 +248,7 @@ export default function Pos() {
         id: cartItemId,
         product, 
         quantity: 1, 
-        price: product.sellingPrice
+        price: effectivePrice
       }];
     });
   };
@@ -250,7 +262,7 @@ export default function Pos() {
           setTimeout(() => setToastMessage(null), 3000);
           return item;
         }
-        return { ...item, quantity: Number(newQuantity.toFixed(3)) };
+        return { ...item, quantity: Number(newQuantity.toFixed(3)), price: getEffectivePrice(item.product, newQuantity) };
       }
       return item;
     }));
@@ -264,7 +276,7 @@ export default function Pos() {
           setTimeout(() => setToastMessage(null), 3000);
           return item;
         }
-        return { ...item, quantity: exactQty };
+        return { ...item, quantity: exactQty, price: getEffectivePrice(item.product, exactQty) };
       }
       return item;
     }));
@@ -858,14 +870,8 @@ export default function Pos() {
                   Transferencia
                 </button>
                 <button
-                  onClick={() => setPaymentMethod('VOUCHER')}
-                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'VOUCHER' ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
-                >
-                  Vales
-                </button>
-                <button
                   onClick={() => setPaymentMethod('CREDIT')}
-                  className={`w-full py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'CREDIT' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                  className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg font-medium text-sm transition-colors ${paymentMethod === 'CREDIT' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
                 >
                   Fiado
                 </button>
@@ -916,7 +922,7 @@ export default function Pos() {
             }`}
           >
             {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : <CreditCard className="h-5 w-5" />}
-            {isProcessing ? 'Procesando...' : (paymentMethod === 'CREDIT' ? 'Generar Deuda (Fiado)' : paymentMethod === 'CARD' ? 'Cobrar con Tarjeta' : paymentMethod === 'TRANSFER' ? 'Cobrar Transferencia' : paymentMethod === 'VOUCHER' ? 'Cobrar con Vales' : 'Cobrar en Efectivo')}
+            {isProcessing ? 'Procesando...' : (paymentMethod === 'CREDIT' ? 'Generar Deuda (Fiado)' : paymentMethod === 'CARD' ? 'Cobrar con Tarjeta' : paymentMethod === 'TRANSFER' ? 'Cobrar Transferencia' : 'Cobrar en Efectivo')}
           </button>
         </div>
       </div>

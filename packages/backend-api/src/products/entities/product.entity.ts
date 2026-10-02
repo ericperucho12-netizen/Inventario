@@ -51,6 +51,12 @@ export class Product {
   @Column({ default: false })
   isBulk: boolean;
 
+  @Column({ type: 'decimal', precision: 10, scale: 3, nullable: true, transformer: new ColumnNumericTransformer() })
+  wholesaleMinQuantity?: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true, transformer: new ColumnNumericTransformer() })
+  wholesalePrice?: number;
+
   @Column({ nullable: true })
   imageUrl: string;
 

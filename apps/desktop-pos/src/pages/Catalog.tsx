@@ -20,6 +20,8 @@ interface Product {
   imageUrl?: string;
   isBulk?: boolean;
   canUnpack?: boolean;
+  wholesaleMinQuantity?: number;
+  wholesalePrice?: number;
 }
 
 export default function Catalog() {
@@ -48,6 +50,9 @@ export default function Catalog() {
   const [prodImageUrl, setProdImageUrl] = useState('');
   const [prodIsBulk, setProdIsBulk] = useState(false);
   const [prodCanUnpack, setProdCanUnpack] = useState(false);
+  const [prodHasWholesale, setProdHasWholesale] = useState(false);
+  const [prodWholesaleMinQuantity, setProdWholesaleMinQuantity] = useState('');
+  const [prodWholesalePrice, setProdWholesalePrice] = useState('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
@@ -86,6 +91,9 @@ export default function Catalog() {
       setProdImageUrl('');
       setProdIsBulk(false);
       setProdCanUnpack(false);
+      setProdHasWholesale(false);
+      setProdWholesaleMinQuantity('');
+      setProdWholesalePrice('');
     } else {
       setCatName('');
       setCatDesc('');
@@ -104,6 +112,9 @@ export default function Catalog() {
     setProdImageUrl(prod.imageUrl || '');
     setProdIsBulk(prod.isBulk || false);
     setProdCanUnpack(prod.canUnpack || false);
+    setProdHasWholesale(!!prod.wholesaleMinQuantity);
+    setProdWholesaleMinQuantity(prod.wholesaleMinQuantity ? String(prod.wholesaleMinQuantity) : '');
+    setProdWholesalePrice(prod.wholesalePrice ? String(prod.wholesalePrice) : '');
     setIsModalOpen(true);
   };
 
@@ -156,7 +167,9 @@ export default function Catalog() {
         categoryId: prodCatId,
         imageUrl: prodImageUrl || null,
         isBulk: prodIsBulk,
-        canUnpack: prodCanUnpack
+        canUnpack: prodCanUnpack,
+        wholesaleMinQuantity: prodHasWholesale ? Number(prodWholesaleMinQuantity) : null,
+        wholesalePrice: prodHasWholesale ? Number(prodWholesalePrice) : null
       };
       
       if (editingProduct) {
@@ -477,6 +490,25 @@ export default function Catalog() {
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50 mt-4 space-y-3">
+                    <label className="flex items-center gap-3 text-sm font-medium text-slate-300 cursor-pointer">
+                      <input type="checkbox" checked={prodHasWholesale} onChange={e => setProdHasWholesale(e.target.checked)} className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-slate-900" />
+                      ¿Tiene precio de mayoreo?
+                    </label>
+                    {prodHasWholesale && (
+                      <div className="flex gap-4 pt-2 border-t border-slate-700/50">
+                        <div className="flex-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">A partir de (cantidad)</label>
+                          <input required type="number" step={prodIsBulk ? "0.001" : "1"} value={prodWholesaleMinQuantity} onChange={e => setProdWholesaleMinQuantity(e.target.value)} placeholder="Ej. 3" className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 focus:border-purple-500 focus:outline-none text-sm" />
+                        </div>
+                        <div className="flex-1">
+                          <label className="mb-1 block text-xs font-medium text-slate-400">Precio unitario mayoreo</label>
+                          <input required type="number" step="0.01" value={prodWholesalePrice} onChange={e => setProdWholesalePrice(e.target.value)} placeholder="Ej. 15.00" className="w-full rounded-lg border border-slate-700 bg-slate-950 p-2 text-emerald-400 focus:border-purple-500 focus:outline-none text-sm" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-slate-300">Enlace de Foto (URL opcional)</label>
