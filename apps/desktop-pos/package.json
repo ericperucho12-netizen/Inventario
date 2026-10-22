@@ -8,6 +8,7 @@
   "main": "main.js",
   "scripts": {
     "dev": "concurrently \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "web": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "electron:build": "npm run build && electron-builder"

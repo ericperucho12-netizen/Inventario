@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:backend": "npm run start:dev --workspace=backend-api",
+    "dev:pos": "npm run dev --workspace=desktop-pos",
+    "dev:web": "npm run web --workspace=desktop-pos",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
