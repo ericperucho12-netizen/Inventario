@@ -1,0 +1,14 @@
+{
+  "proyecto": "PeruchOS - Inventario & Punto de Venta",
+  "descripcion": "Accesos directos y enlaces rápidos del proyecto",
+  "enlaces": {
+    "backend_produccion": "https://peruchos-backend.onrender.com",
+    "github_repositorio": "https://github.com/ericperucho12-netizen/Inventario",
+    "render_dashboard": "https://dashboard.render.com",
+    "aws_consola_rds": "https://console.aws.amazon.com/rds"
+  },
+  "local": {
+    "frontend_pos": "http://localhost:5173",
+    "backend_api": "http://localhost:3000"
+  }
+}
